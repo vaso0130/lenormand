@@ -1,0 +1,1489 @@
+<title>雷諾曼占卜</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --felt-950: #0A110D;
+    --felt-900: #0E1713;
+    --felt-800: #14201B;
+    --felt-700: #1C2B24;
+    --felt-line: #2E4237;
+    --gold: #C9A45C;
+    --gold-bright: #E5CC8F;
+    --gold-dim: #8A7245;
+    --ivory: #F2E8D5;
+    --ivory-shade: #E2D2B4;
+    --ink: #33291D;
+    --ink-soft: #5C4F3C;
+    --red: #A8402F;
+    --muted: #8FA396;
+    --back-1: #1E2A4A;
+    --back-2: #16203A;
+    --serif: "Noto Serif TC", "Palatino Linotype", "Book Antiqua", "PMingLiU", "新細明體", Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--serif);
+    background:
+      radial-gradient(1200px 700px at 50% -10%, rgba(201,164,92,.10), transparent 60%),
+      radial-gradient(900px 600px at 85% 110%, rgba(201,164,92,.05), transparent 55%),
+      var(--felt-900);
+    color: var(--ivory);
+    min-height: 100vh;
+    line-height: 1.7;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px 96px; }
+
+  /* ── 銘牌標題 ─────────────────────────────── */
+  header { text-align: center; padding: 56px 0 8px; }
+  .eyebrow {
+    color: var(--gold);
+    font-size: 12px;
+    letter-spacing: .5em;
+    text-indent: .5em;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-size: clamp(34px, 6vw, 52px);
+    font-weight: 600;
+    letter-spacing: .18em;
+    text-indent: .18em;
+    margin: 0 0 10px;
+    color: var(--gold-bright);
+    text-wrap: balance;
+    text-shadow: 0 0 40px rgba(201,164,92,.25);
+  }
+  .subtitle { color: var(--muted); font-size: 15px; margin: 0; }
+  .rule {
+    width: 220px; height: 14px; margin: 22px auto 0;
+    display: flex; align-items: center; gap: 10px;
+    color: var(--gold-dim);
+  }
+  .rule::before, .rule::after {
+    content: ""; flex: 1; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-dim));
+  }
+  .rule::after { background: linear-gradient(90deg, var(--gold-dim), transparent); }
+
+  /* ── 盤面選擇 ─────────────────────────────── */
+  .section-label {
+    color: var(--gold);
+    font-size: 12px;
+    letter-spacing: .45em;
+    text-indent: .45em;
+    text-align: center;
+    margin: 44px 0 20px;
+  }
+  .spreads {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+  }
+  .spread-btn {
+    font-family: inherit;
+    text-align: left;
+    background: linear-gradient(160deg, var(--felt-700), var(--felt-800));
+    border: 1px solid var(--felt-line);
+    border-radius: 6px;
+    color: var(--ivory);
+    padding: 18px 18px 15px;
+    cursor: pointer;
+    transition: border-color .25s, transform .25s, box-shadow .25s;
+  }
+  .spread-btn:hover, .spread-btn:focus-visible {
+    border-color: var(--gold-dim);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 28px rgba(0,0,0,.35);
+  }
+  .spread-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .spread-btn.active { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; }
+  .spread-btn .s-name { font-size: 17px; color: var(--gold-bright); letter-spacing: .08em; }
+  .spread-btn .s-count { font-size: 12px; color: var(--muted); letter-spacing: .2em; margin: 2px 0 8px; }
+  .spread-btn .s-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* ── 牌桌 ─────────────────────────────────── */
+  #table { display: none; margin-top: 40px; }
+  #table.on { display: block; }
+
+  .table-head {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 18px;
+    border-bottom: 1px solid var(--felt-line);
+    padding-bottom: 14px; margin-bottom: 28px;
+  }
+  .table-head h2 { font-size: 22px; letter-spacing: .12em; color: var(--gold-bright); margin: 0; font-weight: 600; }
+  .table-head .hint { color: var(--muted); font-size: 14px; }
+  .table-head .spacer { flex: 1; }
+  .ghost-btn {
+    font-family: inherit; font-size: 13px; letter-spacing: .15em;
+    background: none; border: 1px solid var(--felt-line); border-radius: 4px;
+    color: var(--muted); padding: 7px 14px; cursor: pointer;
+    transition: color .2s, border-color .2s;
+  }
+  .ghost-btn:hover, .ghost-btn:focus-visible { color: var(--gold-bright); border-color: var(--gold-dim); }
+  .ghost-btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+  /* 問題輸入 */
+  .question-row {
+    display: flex; align-items: center; gap: 14px;
+    margin: 0 0 26px;
+  }
+  .question-row label {
+    flex: 0 0 auto; font-size: 12px; letter-spacing: .35em; text-indent: .35em;
+    color: var(--gold);
+    white-space: nowrap;
+  }
+  #q-input {
+    flex: 1; min-width: 0;
+    font-family: var(--serif); font-size: 15px;
+    color: var(--ivory);
+    background: var(--felt-800);
+    border: 1px solid var(--felt-line); border-radius: 4px;
+    padding: 10px 14px;
+    transition: border-color .2s;
+  }
+  #q-input::placeholder { color: var(--muted); opacity: .7; }
+  #q-input:focus { outline: none; border-color: var(--gold-dim); }
+
+  /* 牌陣槽位 */
+  #slots-scroll { overflow-x: auto; padding: 6px 2px 14px; }
+  #slots { display: grid; gap: 14px; justify-content: center; --cw: 118px; }
+  #slots.tableau { --cw: 82px; gap: 10px; min-width: calc(8 * (var(--cw) + 10px)); }
+
+  .slot { width: var(--cw); }
+  .slot .pos-label {
+    text-align: center; font-size: 12px; color: var(--muted);
+    letter-spacing: .1em; margin-bottom: 6px; min-height: 1.5em;
+    white-space: nowrap;
+  }
+  .slot .pos-label.house { color: var(--gold-dim); font-size: 11px; }
+
+  .card-well {
+    width: var(--cw); aspect-ratio: 2 / 3;
+    border: 1px dashed var(--felt-line);
+    border-radius: 8px;
+    perspective: 900px;
+  }
+  .card-well.filled { border-color: transparent; }
+
+  /* 卡片本體（3D 翻面） */
+  .card3d {
+    position: relative; width: 100%; height: 100%;
+    transform-style: preserve-3d;
+    transition: transform .6s cubic-bezier(.4, .1, .2, 1);
+    transform: rotateY(180deg);
+    cursor: default;
+  }
+  .card3d.revealed { transform: rotateY(0deg); }
+  .card3d.clickable { cursor: pointer; }
+
+  .cface {
+    position: absolute; inset: 0;
+    backface-visibility: hidden;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .cface.back {
+    transform: rotateY(180deg);
+    background:
+      repeating-linear-gradient(45deg, rgba(201,164,92,.12) 0 1px, transparent 1px 9px),
+      repeating-linear-gradient(-45deg, rgba(201,164,92,.12) 0 1px, transparent 1px 9px),
+      linear-gradient(160deg, var(--back-1), var(--back-2));
+    border: 1px solid rgba(201,164,92,.4);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cface.back::after {
+    content: "❋";
+    color: var(--gold); opacity: .8;
+    font-size: calc(var(--cw) * .3);
+    text-shadow: 0 0 18px rgba(201,164,92,.5);
+  }
+  .cface.front {
+    background: linear-gradient(170deg, var(--ivory), var(--ivory-shade));
+    color: var(--ink);
+    border: 1px solid var(--gold-dim);
+    box-shadow: inset 0 0 0 3px var(--ivory), inset 0 0 0 4px rgba(138,114,69,.55);
+    display: flex; flex-direction: column;
+    padding: calc(var(--cw) * .07);
+  }
+  .cface.front .c-num {
+    font-size: calc(var(--cw) * .11);
+    letter-spacing: .08em;
+    color: var(--ink-soft);
+    display: flex; justify-content: space-between;
+  }
+  .cface.front .c-num .pol { font-size: calc(var(--cw) * .1); }
+  .pol.good { color: var(--gold-dim); }
+  .pol.bad { color: var(--red); }
+  .pol.mid { color: #8b8b7a; }
+  .cface.front .c-art {
+    flex: 1; display: flex; align-items: center; justify-content: center;
+    font-size: calc(var(--cw) * .42);
+    filter: sepia(.5) saturate(.75) contrast(.95);
+  }
+  .cface.front .c-zh {
+    text-align: center;
+    font-size: calc(var(--cw) * .14);
+    letter-spacing: .18em; text-indent: .18em;
+    font-weight: 600;
+  }
+  .cface.front .c-latin {
+    text-align: center;
+    font-size: calc(var(--cw) * .085);
+    letter-spacing: .12em;
+    color: var(--ink-soft);
+    text-transform: uppercase;
+  }
+  .card3d.spotlit .cface.front { box-shadow: inset 0 0 0 3px var(--ivory), inset 0 0 0 4px rgba(138,114,69,.55), 0 0 0 2px var(--gold), 0 0 24px rgba(201,164,92,.45); }
+
+  @keyframes deal-in {
+    from { opacity: 0; transform: translateY(26px) rotateY(180deg) scale(.92); }
+    to   { opacity: 1; transform: translateY(0) rotateY(180deg) scale(1); }
+  }
+  .card3d.dealing { animation: deal-in .35s ease-out both; }
+
+  /* ── 牌堆（扇形） ─────────────────────────── */
+  #deck-area { margin-top: 36px; }
+  .deck-caption {
+    text-align: center; color: var(--muted); font-size: 14px;
+    margin-bottom: 4px;
+  }
+  .deck-caption b { color: var(--gold-bright); font-weight: 600; }
+  #fan-scroll { overflow-x: auto; padding: 26px 12px 18px; }
+  #fan {
+    display: flex; justify-content: safe center;
+    min-width: min-content;
+    padding: 0 20px;
+  }
+  .fan-card {
+    flex: 0 0 auto;
+    width: 52px; aspect-ratio: 2 / 3;
+    margin-left: -30px;
+    border-radius: 6px;
+    border: 1px solid rgba(201,164,92,.4);
+    background:
+      repeating-linear-gradient(45deg, rgba(201,164,92,.12) 0 1px, transparent 1px 8px),
+      repeating-linear-gradient(-45deg, rgba(201,164,92,.12) 0 1px, transparent 1px 8px),
+      linear-gradient(160deg, var(--back-1), var(--back-2));
+    cursor: pointer;
+    transition: transform .18s ease, box-shadow .18s ease;
+    padding: 0;
+  }
+  .fan-card:first-child { margin-left: 0; }
+  .fan-card:hover, .fan-card:focus-visible {
+    transform: translateY(-14px);
+    box-shadow: 0 10px 22px rgba(0,0,0,.45), 0 0 12px rgba(201,164,92,.3);
+    z-index: 2; position: relative;
+  }
+  .fan-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+  .fan-card.gone { opacity: 0; pointer-events: none; transform: translateY(-30px) scale(.8); }
+
+  .deck-tools { text-align: center; margin-top: 10px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .ghost-btn.gold { color: var(--gold-bright); border-color: var(--gold-dim); }
+  .ghost-btn.gold:hover:not(:disabled) { border-color: var(--gold); box-shadow: 0 0 14px rgba(201,164,92,.25); }
+  .ghost-btn:disabled { opacity: .35; cursor: not-allowed; }
+
+  /* ── 洗牌與切牌儀式 ───────────────────────── */
+  #stack-wrap { display: flex; justify-content: center; align-items: center; padding: 22px 0 8px; min-height: 200px; }
+  #stack { position: relative; width: 116px; height: 174px; }
+  .stack-card {
+    position: absolute; inset: 0; border-radius: 8px;
+    border: 1px solid rgba(201,164,92,.4);
+    background:
+      repeating-linear-gradient(45deg, rgba(201,164,92,.12) 0 1px, transparent 1px 9px),
+      repeating-linear-gradient(-45deg, rgba(201,164,92,.12) 0 1px, transparent 1px 9px),
+      linear-gradient(160deg, var(--back-1), var(--back-2));
+    box-shadow: 0 2px 6px rgba(0,0,0,.35);
+    transition: transform .38s cubic-bezier(.3, .7, .3, 1);
+  }
+  #cut-scroll { overflow-x: auto; padding: 26px 12px 8px; }
+  #cut-strip { display: flex; justify-content: safe center; min-width: min-content; padding: 0 20px; }
+  #cut-strip .fan-card { cursor: pointer; }
+
+  /* 專屬卡背（back.png 載入成功時啟用；缺圖退回花紋） */
+  body.has-back .fan-card,
+  body.has-back .stack-card,
+  body.has-back .cface.back {
+    background: #1E2A4A url("cards/back.jpg") center / cover no-repeat;
+    border-color: rgba(201,164,92,.55);
+  }
+  body.has-back .cface.back::after { content: none; }
+
+  /* ── 解讀帳冊（象牙紙） ────────────────────── */
+  #reading { display: none; margin-top: 48px; }
+  #reading.on { display: block; }
+  .paper {
+    background: linear-gradient(175deg, var(--ivory), var(--ivory-shade));
+    color: var(--ink);
+    border-radius: 8px;
+    border: 1px solid var(--gold-dim);
+    box-shadow: 0 18px 50px rgba(0,0,0,.45), inset 0 0 0 6px var(--ivory), inset 0 0 0 7px rgba(138,114,69,.4);
+    padding: 34px clamp(22px, 5vw, 52px) 38px;
+  }
+  .paper h3 {
+    margin: 0 0 4px;
+    text-align: center;
+    font-size: 20px; letter-spacing: .3em; text-indent: .3em;
+    color: var(--ink); font-weight: 600;
+  }
+  .paper .paper-sub {
+    text-align: center; color: var(--ink-soft); font-size: 13px;
+    letter-spacing: .15em; margin-bottom: 26px;
+  }
+  .entry { padding: 18px 0; border-top: 1px solid rgba(138,114,69,.3); }
+  .entry:first-of-type { border-top: none; }
+  .entry.spotlit { background: rgba(201,164,92,.14); margin: 0 -16px; padding-left: 16px; padding-right: 16px; border-radius: 4px; }
+  .entry .e-pos {
+    font-size: 12px; letter-spacing: .3em; color: var(--gold-dim);
+    margin-bottom: 4px;
+  }
+  .entry .e-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+  .entry .e-name { font-size: 19px; font-weight: 600; letter-spacing: .1em; }
+  .entry .e-glyph { filter: sepia(.5) saturate(.75); }
+  .entry .e-keys { font-size: 13px; color: var(--ink-soft); letter-spacing: .1em; }
+  .entry .e-text { margin: 8px 0 0; font-size: 15px; max-width: 62ch; }
+  .combo-block { border-top: 1px double rgba(138,114,69,.5); margin-top: 8px; padding-top: 20px; }
+  .combo-block .cb-title { font-size: 12px; letter-spacing: .3em; color: var(--gold-dim); margin-bottom: 12px; }
+  .combo { margin: 0 0 12px; font-size: 15px; max-width: 62ch; }
+  .combo b { font-weight: 600; letter-spacing: .06em; }
+  .combo .arrow { color: var(--gold-dim); padding: 0 6px; }
+  /* 生成牌面圖：載入成功時的版式 */
+  .cface.front .c-img {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    object-fit: cover; z-index: 1;
+  }
+  .cface.front.has-img::after {
+    content: ""; position: absolute; left: 4%; right: 4%; bottom: 2.5%;
+    height: calc(var(--cw) * .3); z-index: 2;
+    background: linear-gradient(180deg, rgba(242,232,213,0), rgba(242,232,213,.94) 42%);
+  }
+  .cface.front.has-img .c-art { display: none; }
+  .cface.front.has-img .c-num { position: absolute; top: 3.5%; left: 5%; right: 5%; z-index: 3; }
+  .cface.front.has-img .c-num span {
+    background: rgba(242,232,213,.9);
+    border: 1px solid rgba(138,114,69,.45);
+    border-radius: 3px; padding: 0 .3em;
+  }
+  .cface.front.has-img .c-zh { position: absolute; left: 0; right: 0; bottom: calc(var(--cw) * .115); z-index: 3; }
+  .cface.front.has-img .c-latin { position: absolute; left: 0; right: 0; bottom: calc(var(--cw) * .04); z-index: 3; }
+
+  /* AI 解讀提示詞 */
+  .ai-block { border-top: 1px double rgba(138,114,69,.5); margin-top: 8px; padding-top: 20px; }
+  .ai-block .ai-note { margin: 0 0 12px; font-size: 13.5px; color: var(--ink-soft); }
+  .tone-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
+  .tone-row label { font-size: 12px; letter-spacing: .25em; text-indent: .25em; color: var(--gold-dim); white-space: nowrap; }
+  #tone-select, #tone-custom {
+    font-family: var(--serif); font-size: 13.5px; color: var(--ink);
+    background: rgba(255,255,255,.5);
+    border: 1px solid rgba(138,114,69,.5); border-radius: 4px;
+    padding: 7px 10px;
+  }
+  #tone-custom { flex: 1; min-width: 180px; }
+  #tone-select:focus, #tone-custom:focus { outline: none; border-color: var(--ink-soft); }
+
+  .ai-tools { display: flex; gap: 10px; flex-wrap: wrap; }
+  .ghost-btn.dark { color: var(--ink-soft); border-color: rgba(138,114,69,.6); }
+  .ghost-btn.dark:hover, .ghost-btn.dark:focus-visible { color: var(--ink); border-color: var(--ink-soft); }
+  #ai-prompt {
+    display: block; width: 100%; min-height: 240px; margin-top: 14px;
+    font-family: var(--serif); font-size: 13.5px; line-height: 1.8;
+    color: var(--ink); background: rgba(255,255,255,.45);
+    border: 1px solid rgba(138,114,69,.5); border-radius: 4px;
+    padding: 14px 16px; resize: vertical;
+  }
+  #ai-prompt[hidden] { display: none; }
+
+  .closing {
+    margin-top: 26px; text-align: center;
+    color: var(--ink-soft); font-size: 13px; letter-spacing: .2em;
+  }
+
+  /* 占卜歷史 */
+  #hist-list { display: grid; gap: 12px; }
+  .hist-empty { text-align: center; color: var(--muted); font-size: 14px; }
+  .hist-item {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px;
+    background: linear-gradient(160deg, var(--felt-700), var(--felt-800));
+    border: 1px solid var(--felt-line); border-radius: 6px;
+    padding: 14px 18px;
+  }
+  .hist-item .h-when { color: var(--muted); font-size: 12.5px; letter-spacing: .08em; font-variant-numeric: tabular-nums; }
+  .hist-item .h-spread { color: var(--gold-bright); font-size: 14.5px; letter-spacing: .06em; }
+  .hist-item .h-q { flex-basis: 100%; color: var(--ivory); font-size: 14px; opacity: .9; }
+  .hist-item .h-cards { flex-basis: 100%; font-size: 17px; letter-spacing: .12em; filter: sepia(.35) saturate(.8); }
+  .hist-item .h-actions { margin-left: auto; display: flex; gap: 8px; }
+
+  /* 跟著牌走的牌義浮框 */
+  #tip {
+    position: absolute; z-index: 50;
+    width: 256px; max-width: 84vw;
+    background: linear-gradient(170deg, var(--ivory), var(--ivory-shade));
+    color: var(--ink);
+    border: 1px solid var(--gold-dim); border-radius: 6px;
+    box-shadow: 0 14px 36px rgba(0,0,0,.5), inset 0 0 0 3px var(--ivory), inset 0 0 0 4px rgba(138,114,69,.4);
+    padding: 13px 15px;
+    font-size: 13px; line-height: 1.65;
+    display: none;
+    pointer-events: none;
+  }
+  #tip.on { display: block; }
+  #tip .tip-pos { font-size: 11px; letter-spacing: .25em; color: var(--gold-dim); margin-bottom: 4px; }
+  #tip .tip-name { font-size: 16px; font-weight: 600; letter-spacing: .06em; }
+  #tip .tip-name small { font-weight: 400; color: var(--ink-soft); letter-spacing: .04em; }
+  #tip .tip-name .tip-glyph { filter: sepia(.5) saturate(.75); }
+  #tip .tip-keys { font-size: 12px; color: var(--ink-soft); letter-spacing: .08em; margin: 2px 0 6px; }
+  #tip .tip-text { margin: 0; }
+  #tip .tip-text em { color: var(--ink-soft); }
+
+  footer {
+    text-align: center; color: var(--muted); opacity: .7;
+    font-size: 12px; letter-spacing: .2em; margin-top: 64px;
+  }
+
+  @media (max-width: 640px) {
+    #slots { --cw: 92px; }
+    .fan-card { width: 46px; margin-left: -26px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition-duration: .01ms !important; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Petit Lenormand · MDCCCXLVI</p>
+    <h1>雷諾曼占卜</h1>
+    <p class="subtitle">三十六張牌，一張夜裡的牌桌。牌由你親手抽。</p>
+    <div class="rule">✦</div>
+  </header>
+
+  <p class="section-label">選擇盤面</p>
+  <div class="spreads" id="spreads" role="group" aria-label="盤面選擇"></div>
+
+  <section id="table">
+    <div class="table-head">
+      <h2 id="spread-title"></h2>
+      <span class="hint" id="spread-hint"></span>
+      <span class="spacer"></span>
+      <button class="ghost-btn" id="btn-reset">重新洗牌</button>
+    </div>
+
+    <div class="question-row">
+      <label for="q-input">你的問題</label>
+      <input id="q-input" type="text" maxlength="200"
+        placeholder="默想並寫下你想問的事（選填，會直接寫進 AI 解讀提示詞）">
+    </div>
+
+    <div id="slots-scroll"><div id="slots"></div></div>
+
+    <div id="deck-area">
+      <div id="ritual">
+        <p class="deck-caption" id="ritual-caption">全新牌序——先洗牌（建議七次以上），再切牌，然後開始抽卡。</p>
+        <div id="stack-wrap">
+          <div id="stack"></div>
+        </div>
+        <div id="cut-scroll" hidden><div id="cut-strip"></div></div>
+        <div class="deck-tools">
+          <button class="ghost-btn" id="btn-shuffle">洗牌</button>
+          <button class="ghost-btn" id="btn-cut">切牌</button>
+          <button class="ghost-btn gold" id="btn-begin" disabled>開始抽牌</button>
+        </div>
+      </div>
+      <p class="deck-caption" id="deck-caption" hidden></p>
+      <div id="fan-scroll" hidden><div id="fan"></div></div>
+      <div class="deck-tools">
+        <button class="ghost-btn" id="btn-auto" hidden>讓命運抽完剩下的牌</button>
+        <button class="ghost-btn" id="btn-extend" hidden>再抽兩張補牌（澄清）</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="reading">
+    <div class="paper">
+      <h3>解 讀</h3>
+      <p class="paper-sub" id="reading-sub"></p>
+      <div id="entries"></div>
+      <div id="combos"></div>
+      <div class="ai-block" id="ai-block" hidden>
+        <div class="cb-title">交 給 AI 解 讀</div>
+        <p class="ai-note">把整個牌陣化成一段提示詞——複製後，貼給你信任的任何 AI 占卜師。</p>
+        <div class="tone-row">
+          <label for="tone-select">建議語氣</label>
+          <select id="tone-select">
+            <option value="溫暖但誠實">溫暖但誠實</option>
+            <option value="直白犀利，不留情面">直白犀利，不留情面</option>
+            <option value="溫柔療癒，多些鼓勵">溫柔療癒，多些鼓勵</option>
+            <option value="冷靜理性，條理分析">冷靜理性，條理分析</option>
+            <option value="詩意神秘，如占卜師低語">詩意神秘，如占卜師低語</option>
+            <option value="__custom__">自訂…</option>
+          </select>
+          <input id="tone-custom" type="text" maxlength="40"
+            placeholder="寫下你想要的語氣，例如：像老朋友一樣直說" hidden>
+        </div>
+        <div class="ai-tools">
+          <button class="ghost-btn dark" id="btn-ai">產生解讀 Prompt</button>
+          <button class="ghost-btn dark" id="btn-copy" hidden>複製全文</button>
+        </div>
+        <textarea id="ai-prompt" readonly hidden spellcheck="false" aria-label="AI 解讀提示詞"></textarea>
+      </div>
+      <p class="closing" id="closing" hidden>❦ 牌已言盡，餘下的路由你來走 ❦</p>
+    </div>
+  </section>
+
+  <section id="history">
+    <p class="section-label">占卜歷史</p>
+    <div id="hist-list"></div>
+    <div class="deck-tools">
+      <button class="ghost-btn" id="btn-hist-clear" hidden>清空全部歷史</button>
+    </div>
+  </section>
+
+  <footer>PETIT JEU LENORMAND · 僅供靜心與娛樂</footer>
+</div>
+
+<script>
+"use strict";
+
+/* ── 三十六張牌 ──────────────────────────────
+   noun：作為主詞的短語　mod：作為後續牌的謂語修飾
+   pol：吉 good / 凶 bad / 中 mid                      */
+const CARDS = [
+  { n:1,  zh:"騎士",   latin:"The Rider",    glyph:"🐎", pol:"good", keys:"消息・來訪・速度・行動",
+    text:"有消息正在路上——訪客、通知或新的進展即將抵達。事情開始移動，保持敏捷。",
+    noun:"一則消息或新的行動", mod:"正快速地朝你而來" },
+  { n:2,  zh:"三葉草", latin:"The Clover",   glyph:"🍀", pol:"good", keys:"幸運・機會・輕盈・及時",
+    text:"一段小而確實的好運。把握稍縱即逝的機會；不必貪多，剛剛好就是幸運。",
+    noun:"一份小小的幸運", mod:"帶來一段小而確實的好運" },
+  { n:3,  zh:"船",     latin:"The Ship",     glyph:"⛵", pol:"mid",  keys:"旅行・遠方・貿易・探索",
+    text:"遠方在呼喚：旅行、外地事務或一場心靈的出走。答案不在原地。",
+    noun:"一段旅程或遠方的事物", mod:"指向遠方，或需要一段旅程與等待" },
+  { n:4,  zh:"房屋",   latin:"The House",    glyph:"🏠", pol:"good", keys:"家庭・安穩・歸屬・居所",
+    text:"與家有關的一切：家人、住所、歸屬感。根基穩固，是可以倚靠的地方。",
+    noun:"家庭與安穩的根據地", mod:"與家庭和安穩的基礎息息相關" },
+  { n:5,  zh:"樹",     latin:"The Tree",     glyph:"🌳", pol:"mid",  keys:"健康・成長・根基・緩慢",
+    text:"生命力與健康的訊號。事情像樹一樣慢慢生長，急不得，但根扎得深。",
+    noun:"健康與長期的成長", mod:"關乎健康與長期的扎根成長" },
+  { n:6,  zh:"雲",     latin:"The Clouds",   glyph:"☁️", pol:"bad",  keys:"困惑・不明・動盪・暫時",
+    text:"迷霧當前，資訊不全，先別下定論。雲會散——等天色清朗再做決定。",
+    noun:"一團混沌不明的局面", mod:"籠罩在不確定的迷霧之中" },
+  { n:7,  zh:"蛇",     latin:"The Snake",    glyph:"🐍", pol:"bad",  keys:"糾葛・欺瞞・繞路・智慧",
+    text:"路不會是直的：可能有糾纏、心機，或必須繞道而行。睜大眼睛，以智取勝。",
+    noun:"一段暗藏糾葛的關係或繞路", mod:"暗藏糾葛，路徑比表面看來更曲折" },
+  { n:8,  zh:"棺材",   latin:"The Coffin",   glyph:"⚰️", pol:"bad",  keys:"結束・轉化・停滯・放手",
+    text:"某件事正在落幕。允許它結束，才有空間迎接新的開始；短暫的停滯是必要的休息。",
+    noun:"一個正在落幕的階段", mod:"正走向結束，為轉化騰出空間" },
+  { n:9,  zh:"花束",   latin:"The Bouquet",  glyph:"💐", pol:"good", keys:"禮物・喜悅・邀請・欣賞",
+    text:"一份美意正朝你而來——禮物、讚美或邀請。優雅地收下，也記得回禮。",
+    noun:"一份美好的禮物或邀請", mod:"帶來令人愉悅的驚喜與善意" },
+  { n:10, zh:"鐮刀",   latin:"The Scythe",   glyph:"🪓", pol:"bad",  keys:"切割・決斷・突然・收割",
+    text:"快而突然的切斷：一個決定、一次收割。刀落之處乾淨俐落，但要小心別傷到自己。",
+    noun:"一次突然的切割或決斷", mod:"將被突然而果斷地切斷或收割" },
+  { n:11, zh:"鞭子",   latin:"The Whip",     glyph:"➰", pol:"bad",  keys:"爭執・重複・消耗・張力",
+    text:"反覆的摩擦與爭論，同樣的問題一再回來。停止內耗，把力氣用在刀口上。",
+    noun:"一場反覆的爭執或消耗", mod:"伴隨著爭執、消耗與一再重複的張力" },
+  { n:12, zh:"鳥",     latin:"The Birds",    glyph:"🐦", pol:"mid",  keys:"交談・流言・緊張・成雙",
+    text:"空氣裡滿是交談聲：電話、討論、耳語。熱鬧但也焦躁，別讓雜音蓋過重點。",
+    noun:"一陣流言與忙亂的交談", mod:"引起許多討論、耳語與焦慮" },
+  { n:13, zh:"小孩",   latin:"The Child",    glyph:"🧸", pol:"good", keys:"開始・天真・幼小・信任",
+    text:"一個新的開始，還小、還嫩，需要呵護。用初學者的眼睛看世界。",
+    noun:"一個嶄新而稚嫩的開始", mod:"還很年輕，正處於天真的起步階段" },
+  { n:14, zh:"狐狸",   latin:"The Fox",      glyph:"🦊", pol:"bad",  keys:"狡猾・警覺・工作・生存",
+    text:"有些事不如表面單純，保持警覺；也代表職場與謀生的本領。像狐狸一樣聰明地生存。",
+    noun:"一步需要提防的算計（或一份工作）", mod:"需要提防其中的算計，或與工作有關" },
+  { n:15, zh:"熊",     latin:"The Bear",     glyph:"🐻", pol:"mid",  keys:"力量・上司・財富・保護",
+    text:"一股強大的力量：上司、長輩或你自己的實力。它能保護你，也可能壓著你。",
+    noun:"一股強大的力量或一位掌權者", mod:"受到強大力量或掌權者的影響" },
+  { n:16, zh:"星星",   latin:"The Stars",    glyph:"✨", pol:"good", keys:"希望・指引・靈感・方向",
+    text:"抬頭就能看見方向。願景清晰、前景看好，跟著星光走，不會迷路。",
+    noun:"一線清晰的希望與指引", mod:"有明確的方向感，前景值得期待" },
+  { n:17, zh:"鸛鳥",   latin:"The Stork",    glyph:"🦢", pol:"good", keys:"改變・遷移・更新・孕育",
+    text:"改變正在醞釀：搬遷、轉職或一次蛻變。鸛鳥帶來新的季節。",
+    noun:"一場醞釀中的改變與遷移", mod:"正在醞釀一場遷移或改變" },
+  { n:18, zh:"狗",     latin:"The Dog",      glyph:"🐕", pol:"good", keys:"忠誠・朋友・守護・信賴",
+    text:"一位值得信賴的朋友就在身邊。忠誠是這張牌的名字——也提醒你同樣以誠相待。",
+    noun:"一位忠誠的朋友", mod:"有忠誠的朋友從旁守護" },
+  { n:19, zh:"塔",     latin:"The Tower",    glyph:"🗼", pol:"mid",  keys:"權威・體制・孤獨・遠見",
+    text:"與機構、官方或權威有關；也可能是一段自我隔離的高處時光。站得高看得遠，但別忘了下樓。",
+    noun:"一座體制或權威的高塔", mod:"與體制、權威有關，或帶著一絲孤獨" },
+  { n:20, zh:"花園",   latin:"The Garden",   glyph:"⛲", pol:"mid",  keys:"社交・公眾・聚會・名聲",
+    text:"事情走向公開場合：聚會、社群、公眾目光。適合露面與經營人脈。",
+    noun:"一個公開的社交場合", mod:"將攤在眾人眼前，與社交圈緊密相連" },
+  { n:21, zh:"山",     latin:"The Mountain", glyph:"⛰️", pol:"bad",  keys:"阻礙・延遲・沉重・考驗",
+    text:"一座山橫在路上。進度延遲、阻力沉重——但山是用來翻的，繞或攀，都需要時間。",
+    noun:"一道橫在眼前的阻礙", mod:"眼前橫著阻礙，需要耐心翻越" },
+  { n:22, zh:"岔路",   latin:"The Crossroad",glyph:"🛤️", pol:"mid",  keys:"選擇・分岔・猶豫・自由",
+    text:"你站在岔路口，必須選一條走。猶豫本身也是一種消耗——心之所向，就是路。",
+    noun:"一個懸而未決的選擇", mod:"走到了必須做出選擇的路口" },
+  { n:23, zh:"老鼠",   latin:"The Mice",     glyph:"🐭", pol:"bad",  keys:"損耗・憂慮・侵蝕・流失",
+    text:"有東西正在悄悄流失：精力、金錢或信任。及早堵住漏洞，別讓小洞變成大患。",
+    noun:"一點一滴的損耗與憂慮", mod:"正被一點一滴地損耗，別置之不理" },
+  { n:24, zh:"心",     latin:"The Heart",    glyph:"❤️", pol:"good", keys:"愛情・情感・真心・和解",
+    text:"感情是此刻的主題：愛情、親情或對一件事的熱愛。跟著心走。",
+    noun:"一段真摯的感情", mod:"與愛和真摯的情感緊緊相繫" },
+  { n:25, zh:"戒指",   latin:"The Ring",     glyph:"💍", pol:"mid",  keys:"承諾・契約・循環・連結",
+    text:"一份承諾或契約即將成形——也可能是一個不斷重複的循環。戴上之前，想清楚。",
+    noun:"一份承諾或契約", mod:"將以承諾或契約的形式確定下來" },
+  { n:26, zh:"書",     latin:"The Book",     glyph:"📖", pol:"mid",  keys:"秘密・知識・學習・未知",
+    text:"還有你不知道的事。可能是一門學問、一份文件，或一個等待揭曉的秘密。",
+    noun:"一個尚未揭曉的秘密", mod:"還藏著尚未揭曉的秘密與知識" },
+  { n:27, zh:"信",     latin:"The Letter",   glyph:"✉️", pol:"mid",  keys:"訊息・文件・書信・通知",
+    text:"白紙黑字的消息：信件、合約、訊息通知。留意文字裡的細節。",
+    noun:"一封信件、文件或訊息", mod:"會以文字、文件或訊息的形式到來" },
+  { n:28, zh:"男人",   latin:"The Man",      glyph:"🎩", pol:"mid",  keys:"男性・當事人・他",
+    text:"代表問卜者本人（男性）或生命中重要的男性角色。周圍的牌訴說著他的處境。",
+    noun:"一位重要的男性", mod:"與一位重要的男性角色有關" },
+  { n:29, zh:"女人",   latin:"The Woman",    glyph:"👒", pol:"mid",  keys:"女性・當事人・她",
+    text:"代表問卜者本人（女性）或生命中重要的女性角色。周圍的牌訴說著她的處境。",
+    noun:"一位重要的女性", mod:"與一位重要的女性角色有關" },
+  { n:30, zh:"百合",   latin:"The Lily",     glyph:"⚜️", pol:"good", keys:"平靜・成熟・德行・智慧",
+    text:"歷經歲月的平靜與純粹。事情需要成熟的心態與時間的醞釀；冬日之花，靜靜綻放。",
+    noun:"一段平靜成熟的時光", mod:"歸於平靜，需要成熟與德行來守護" },
+  { n:31, zh:"太陽",   latin:"The Sun",      glyph:"☀️", pol:"good", keys:"成功・能量・光明・勝利",
+    text:"整副牌裡最亮的一張：成功、活力、溫暖。烏雲將散，光會照進來。",
+    noun:"一股光明的成功能量", mod:"將迎來光明、能量與成功" },
+  { n:32, zh:"月亮",   latin:"The Moon",     glyph:"🌙", pol:"mid",  keys:"情緒・直覺・名聲・夜",
+    text:"月亮掌管情緒與直覺，也照亮你的名聲與被看見的方式。相信第六感，但別被情緒帶著走。",
+    noun:"情緒、直覺與名聲", mod:"牽動情緒與直覺，也關乎名聲" },
+  { n:33, zh:"鑰匙",   latin:"The Key",      glyph:"🗝️", pol:"good", keys:"解答・確定・突破・命定",
+    text:"門就要開了。答案確定、問題可解——鑰匙在手，是強而有力的「是」。",
+    noun:"一把打開答案的鑰匙", mod:"即將迎刃而解，答案已在門後" },
+  { n:34, zh:"魚",     latin:"The Fish",     glyph:"🐟", pol:"good", keys:"金錢・豐盛・流動・生意",
+    text:"資源如水流動：金錢、生意、機會源源而來。順著流，別緊抓。",
+    noun:"金錢與資源的流動", mod:"與金錢和資源的流動有關" },
+  { n:35, zh:"錨",     latin:"The Anchor",   glyph:"⚓", pol:"good", keys:"穩定・堅持・久留・安全",
+    text:"拋錨停泊：一件值得長久經營的事。穩定是禮物，但別讓安穩變成擱淺。",
+    noun:"一份穩固長久的依靠", mod:"將穩定下來，值得長久經營" },
+  { n:36, zh:"十字架", latin:"The Cross",    glyph:"✝️", pol:"bad",  keys:"負擔・考驗・命運・信念",
+    text:"一份必須背起來的重量。這是考驗，也是功課——背過這一段，肩膀會變得更寬。",
+    noun:"一份沉重卻必要的課題", mod:"是一份必須承擔的課題與考驗" },
+];
+
+/* 撲克牌對應與牌面圖檔 */
+const PK = ["紅心9","方塊6","黑桃10","紅心K","紅心7","梅花K","梅花Q","方塊9","黑桃Q","方塊J","梅花J","方塊7","黑桃J","梅花9","梅花10","紅心6","紅心Q","紅心10","黑桃6","黑桃8","梅花8","方塊Q","梅花7","紅心J","梅花A","方塊10","黑桃7","紅心A","黑桃A","黑桃K","方塊A","紅心8","方塊8","方塊K","黑桃9","梅花6"];
+const SLUGS = ["rider","clover","ship","house","tree","clouds","snake","coffin","bouquet","scythe","whip","birds","child","fox","bear","stars","stork","dog","tower","garden","mountain","crossroad","mice","heart","ring","book","letter","man","woman","lily","sun","moon","key","fish","anchor","cross"];
+CARDS.forEach((c, i) => {
+  c.pk = PK[i];
+  c.img = "cards/" + String(c.n).padStart(2, "0") + "-" + SLUGS[i] + ".jpg";
+});
+
+const POL_MARK = { good:"✦ 吉", bad:"✧ 挑戰", mid:"◦ 中性" };
+
+/* ── 占星十二宮位對應 ─────────────────────── */
+const HOUSES = [
+  { label:"第1宮・命宮",   sign:"牡羊座", title:"自我現況",       hint:"目前狀態、外在形象與個人活力" },
+  { label:"第2宮・財帛宮", sign:"金牛座", title:"正財與價值",     hint:"財務狀況、收入、金錢觀與安全感" },
+  { label:"第3宮・兄弟宮", sign:"雙子座", title:"溝通與學習",     hint:"日常通訊、短程旅行、手足鄰里與學習思考" },
+  { label:"第4宮・田宅宮", sign:"巨蟹座", title:"家庭與根基",     hint:"家庭生活、與父母的關係、不動產與內心最深處的避風港" },
+  { label:"第5宮・子女宮", sign:"獅子座", title:"創意與戀愛",     hint:"戀愛運、子女、娛樂、才華展現與投資博弈等偏財" },
+  { label:"第6宮・奴僕宮", sign:"處女座", title:"工作與健康",     hint:"日常工作任務、職場同事、身體健康與生活作息" },
+  { label:"第7宮・夫妻宮", sign:"天秤座", title:"重要夥伴關係",   hint:"婚姻、伴侶、合夥人、合約關係與公開的敵人" },
+  { label:"第8宮・疾厄宮", sign:"天蠍座", title:"轉化與他人錢財", hint:"遺產保險等偏財、親密關係、危機與深層轉變" },
+  { label:"第9宮・遷移宮", sign:"射手座", title:"高等學習與遠方", hint:"高等教育、長途旅行、出國運、哲學法律與宗教信仰" },
+  { label:"第10宮・官祿宮", sign:"魔羯座", title:"事業與名望",    hint:"社會地位、職業成就、名聲、人生目標與上司權威的關係" },
+  { label:"第11宮・福德宮", sign:"水瓶座", title:"社交與願景",    hint:"朋友、社交圈、團隊、粉絲群眾與未來的願望理想" },
+  { label:"第12宮・玄秘宮", sign:"雙魚座", title:"潛意識與小人",  hint:"隱藏的小人、潛意識、秘密、孤獨隱遁與心靈深處的困擾" },
+];
+
+/* ── 盤面定義 ──────────────────────────────── */
+const SPREADS = [
+  {
+    id:"daily", name:"單卡・今日指引", count:1, cols:1,
+    desc:"一張牌，一句話。適合每天早晨為自己抽一張。",
+    positions:["今日指引"],
+    combos: () => [],
+  },
+  {
+    id:"three", name:"三卡・時間之流", count:3, cols:3,
+    desc:"過去、現在、未來——看一件事如何流動。",
+    positions:["過去","現在","未來"],
+    combos: (d) => [
+      pair(d[0], d[1], "過去 → 現在"),
+      pair(d[1], d[2], "現在 → 未來"),
+    ],
+  },
+  {
+    id:"five", name:"五卡・敘事之線", count:5, cols:5,
+    desc:"把五張牌讀成一句話，從根源一路說到結果。抽完可再補兩張澄清牌。",
+    positions:["過去根源","目前處境","核心課題","發展趨勢","最終結果"],
+    extend:{ count:2, labels:["補牌・一（澄清）","補牌・二（澄清）"] },
+    combos: (d) => [
+      pair(d[0], d[1], "根源 → 處境"),
+      pair(d[1], d[2], "處境 → 課題"),
+      pair(d[2], d[3], "課題 → 趨勢"),
+      pair(d[3], d[4], "趨勢 → 結果"),
+    ],
+  },
+  {
+    id:"cross", name:"五卡・十字陣", count:5, cols:3,
+    desc:"中央是核心，左右是來路與去向，上下是意識與潛流。",
+    positions:["核心現況","過去・來路","未來・去向","意識・目標","潛流・根基"],
+    place:[[2,2],[1,2],[3,2],[2,1],[2,3]],
+    combos: (d) => [
+      pair(d[1], d[0], "來路 → 核心"),
+      pair(d[0], d[2], "核心 → 去向"),
+      pair(d[3], d[0], "目標 × 核心"),
+      pair(d[0], d[4], "核心 × 潛流"),
+    ],
+  },
+  {
+    id:"pyramid", name:"十卡・金字塔", count:10, cols:8, span2:true,
+    desc:"由上而下四層：頂點是問題核心，向下展開潛在影響、行動與環境，基底是最終結果。",
+    positions:[
+      "頂點・問題核心",
+      "第二層・潛在影響 I","第二層・潛在影響 II",
+      "第三層・行動與環境 I","第三層・行動與環境 II","第三層・行動與環境 III",
+      "基底・結果與潛能 I","基底・結果與潛能 II","基底・結果與潛能 III","基底・結果與潛能 IV",
+    ],
+    place:[[4,1],[3,2],[5,2],[2,3],[4,3],[6,3],[1,4],[3,4],[5,4],[7,4]],
+    combos: (d) => [
+      pair(d[1], d[0], "潛在影響 I × 核心"),
+      pair(d[2], d[0], "潛在影響 II × 核心"),
+      pair(d[3], d[4], "行動之流 I → II"),
+      pair(d[4], d[5], "行動之流 II → III"),
+      pair(d[6], d[7], "結果之流 I → II"),
+      pair(d[7], d[8], "結果之流 II → III"),
+      pair(d[8], d[9], "結果之流 III → IV"),
+    ],
+  },
+  {
+    id:"nine", name:"九宮格・全景", count:9, cols:3,
+    desc:"3 × 3 的完整快照：橫向是時間，縱向是層次，中央是核心。",
+    positions:[
+      "過去 × 想法","現在 × 想法","未來 × 想法",
+      "過去 × 現實","核心","未來 × 現實",
+      "過去 × 潛藏","現在 × 潛藏","未來 × 潛藏",
+    ],
+    combos: (d) => [
+      pair(d[4], d[1], "核心 × 上方（意識）"),
+      pair(d[4], d[7], "核心 × 下方（潛藏）"),
+      pair(d[4], d[3], "核心 × 左方（來處）"),
+      pair(d[4], d[5], "核心 × 去向（未來）"),
+    ],
+  },
+  {
+    id:"houses", name:"十二宮位・生命之輪", count:12, cols:4,
+    desc:"占星十二宮位各落一張牌——從命宮到玄秘宮，一次掃描生活的十二個領域。",
+    positions: HOUSES.map((h) => h.label),
+    combos: () => [],
+  },
+  {
+    id:"gt", name:"大盤・Grand Tableau", count:36, cols:8,
+    desc:"三十六張全數入陣，8 × 4 加底部命運四牌。含宮位對照。",
+    positions:null,
+    combos: () => [],
+  },
+];
+
+/* 兩牌相接的句子：A 的名詞 + B 的謂語 */
+function pair(a, b, label) {
+  return { label, a, b, text: `${a.noun}${b.mod}。` };
+}
+
+/* ── 狀態 ─────────────────────────────────── */
+let spread = null;     // 當前盤面
+let deck = [];         // 目前牌序（索引指向 CARDS；由使用者親手洗切）
+let drawn = [];        // 已抽出的牌（依槽位順序）
+let target = 0;        // 本輪需抽的張數（補牌後會增加）
+let phase = "ritual";  // ritual（洗切牌）→ draw（抽牌）
+let shuffleCount = 0, cutCount = 0, ritualBusy = false;
+let autoTimer = null;
+
+const $ = (s) => document.querySelector(s);
+const elSpreads = $("#spreads"), elTable = $("#table"), elSlots = $("#slots");
+const elFan = $("#fan"), elCaption = $("#deck-caption"), elAuto = $("#btn-auto");
+const elReading = $("#reading"), elEntries = $("#entries"), elCombos = $("#combos");
+const elClosing = $("#closing"), elExtend = $("#btn-extend");
+const elAiBlock = $("#ai-block"), elAiPrompt = $("#ai-prompt");
+const elRitual = $("#ritual"), elRitualCaption = $("#ritual-caption");
+const elStack = $("#stack"), elStackWrap = $("#stack-wrap");
+const elCutScroll = $("#cut-scroll"), elCutStrip = $("#cut-strip");
+const btnShuffle = $("#btn-shuffle"), btnCut = $("#btn-cut"), btnBegin = $("#btn-begin");
+const elFanScroll = $("#fan-scroll");
+
+/* 專屬卡背：載入成功才啟用圖片卡背 */
+(function () {
+  const probe = new Image();
+  probe.onload = () => document.body.classList.add("has-back");
+  probe.src = "cards/back.jpg";
+})();
+
+/* 加密級 0–1 隨機數 */
+function rand01() {
+  const b = new Uint32Array(1);
+  crypto.getRandomValues(b);
+  return b[0] / 4294967296;
+}
+
+/* 真實鴿尾式洗牌（GSR 模型）：
+   以二項分布把牌切成兩疊，再依兩疊剩餘張數的比例交錯落牌。
+   每按一次「洗牌」執行一次；約七次後牌序即接近完全隨機。 */
+function riffle(arr) {
+  let cutN = 0;
+  for (let i = 0; i < arr.length; i++) if (rand01() < 0.5) cutN++;
+  const left = arr.slice(0, cutN), right = arr.slice(cutN);
+  const out = [];
+  let li = 0, ri = 0;
+  while (li < left.length || ri < right.length) {
+    const lRemain = left.length - li, rRemain = right.length - ri;
+    if (rand01() < lRemain / (lRemain + rRemain)) out.push(left[li++]);
+    else out.push(right[ri++]);
+  }
+  return out;
+}
+
+/* 真實切牌：把第 pos 張（0 起算）切成新牌頂 */
+function cutDeck(arr, pos) {
+  return arr.slice(pos).concat(arr.slice(0, pos));
+}
+
+/* ── 盤面選單 ─────────────────────────────── */
+SPREADS.forEach((s) => {
+  const b = document.createElement("button");
+  b.className = "spread-btn";
+  b.innerHTML = `<div class="s-name">${s.name}</div>
+    <div class="s-count">${s.count} 張牌</div>
+    <div class="s-desc">${s.desc}</div>`;
+  b.addEventListener("click", () => selectSpread(s, b));
+  elSpreads.appendChild(b);
+});
+
+function selectSpread(s, btn) {
+  document.querySelectorAll(".spread-btn").forEach((x) => x.classList.remove("active"));
+  btn.classList.add("active");
+  spread = s;
+  $("#q-input").value = "";
+  resetTable();
+  elTable.classList.add("on");
+  elTable.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+$("#btn-reset").addEventListener("click", resetTable);
+
+function resetTable() {
+  if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+  deck = CARDS.map((_, i) => i);   /* 出廠順序——牌序全由你的手決定 */
+  drawn = [];
+  target = spread.count;
+  phase = "ritual";
+  shuffleCount = 0; cutCount = 0; ritualBusy = false;
+  $("#spread-title").textContent = spread.name;
+  $("#spread-hint").textContent = spread.id === "gt"
+    ? "洗牌切牌之後抽牌入盤——或交給命運一次抽完。"
+    : "先洗牌、切牌，再點選你被吸引的那幾張。";
+  buildSlots();
+  buildStack();
+  elRitual.hidden = false;
+  elStackWrap.hidden = false;
+  elCutScroll.hidden = true;
+  btnBegin.disabled = true;
+  btnCut.textContent = "切牌";
+  elRitualCaption.textContent = "全新牌序——先洗牌（建議七次以上），再切牌，然後開始抽卡。";
+  elCaption.hidden = true;
+  elFanScroll.hidden = true;
+  elFan.innerHTML = "";
+  elEntries.innerHTML = "";
+  elCombos.innerHTML = "";
+  elClosing.hidden = true;
+  elReading.classList.remove("on");
+  elAuto.hidden = true;
+  elExtend.hidden = true;
+  elAiBlock.hidden = true;
+  elAiPrompt.hidden = true;
+  elAiPrompt.value = "";
+  $("#btn-copy").hidden = true;
+}
+
+/* ── 洗牌與切牌儀式 ───────────────────────── */
+function buildStack() {
+  elStack.innerHTML = "";
+  for (let i = 0; i < 12; i++) {
+    const c = document.createElement("div");
+    c.className = "stack-card";
+    c.style.transform = `translate(${(i % 3) - 1}px, ${-i * 1.2}px) rotate(${(i % 5) - 2}deg)`;
+    elStack.appendChild(c);
+  }
+}
+
+function ritualStatus() {
+  const parts = [`已洗牌 ${shuffleCount} 次`];
+  if (shuffleCount > 0 && shuffleCount < 7) parts.push("再洗幾次會更均勻");
+  if (cutCount > 0) parts.push(`已切牌 ${cutCount} 次`);
+  if (shuffleCount >= 7) parts.push("牌序已充分混洗");
+  elRitualCaption.textContent = parts.join("・") + "。";
+}
+
+btnShuffle.addEventListener("click", () => {
+  if (ritualBusy || phase !== "ritual") return;
+  ritualBusy = true;
+  if (!elCutScroll.hidden) exitCutView();
+  /* 牌序真的改變：一次鴿尾式交錯洗牌 */
+  deck = riffle(deck);
+  shuffleCount++;
+  /* 牌堆散開再聚攏的動畫 */
+  const cards = [...elStack.children];
+  cards.forEach((c) => {
+    c.style.transform = `translate(${(rand01() * 2 - 1) * 70}px, ${(rand01() * 2 - 1) * 34}px) rotate(${(rand01() * 2 - 1) * 30}deg)`;
+  });
+  setTimeout(() => {
+    cards.forEach((c, i) => {
+      c.style.transform = `translate(${(i % 3) - 1}px, ${-i * 1.2}px) rotate(${(i % 5) - 2}deg)`;
+    });
+    ritualBusy = false;
+  }, 400);
+  ritualStatus();
+  btnBegin.disabled = false;
+});
+
+function enterCutView() {
+  elCutStrip.innerHTML = "";
+  deck.forEach((_, pos) => {
+    const s = document.createElement("button");
+    s.className = "fan-card";
+    s.setAttribute("aria-label", `從第 ${pos + 1} 張切牌`);
+    s.title = pos === 0 ? "牌頂（不切）" : `從第 ${pos + 1} 張切開`;
+    s.addEventListener("click", () => doCut(pos));
+    elCutStrip.appendChild(s);
+  });
+  elStackWrap.hidden = true;
+  elCutScroll.hidden = false;
+  btnCut.textContent = "收回牌堆";
+  elRitualCaption.textContent = "點選一個位置——那張牌以下的整疊會被翻上來，成為新的牌頂。";
+}
+
+function exitCutView() {
+  elStackWrap.hidden = false;
+  elCutScroll.hidden = true;
+  btnCut.textContent = "切牌";
+}
+
+btnCut.addEventListener("click", () => {
+  if (ritualBusy || phase !== "ritual") return;
+  if (elCutScroll.hidden) enterCutView();
+  else { exitCutView(); ritualStatus(); }
+});
+
+function doCut(pos) {
+  if (pos > 0) {
+    deck = cutDeck(deck, pos);   /* 牌序真的從這裡切開 */
+    cutCount++;
+  }
+  exitCutView();
+  ritualStatus();
+  if (pos > 0) elRitualCaption.textContent = `已從第 ${pos + 1} 張切牌，下疊翻上成為牌頂。` + (shuffleCount ? "" : "（記得也要洗牌）");
+}
+
+btnBegin.addEventListener("click", () => {
+  if (btnBegin.disabled || phase !== "ritual") return;
+  phase = "draw";
+  elRitual.hidden = true;
+  elCaption.hidden = false;
+  elFanScroll.hidden = false;
+  buildFan();
+  elAuto.hidden = spread.count < 9;
+  updateCaption();
+});
+
+/* 位置名稱（含大盤宮位與補牌） */
+function posName(i) {
+  if (i >= spread.count) return spread.extend.labels[i - spread.count];
+  if (spread.id === "gt")
+    return `第 ${i + 1} 宮 ・ ${CARDS[i].zh}宮（${CARDS[i].keys.split("・")[0]}之所）`;
+  if (spread.id === "houses")
+    return `${HOUSES[i].label}（${HOUSES[i].sign}・${HOUSES[i].title}）`;
+  return spread.positions[i];
+}
+
+/* ── 槽位 ─────────────────────────────────── */
+function buildSlots() {
+  elSlots.innerHTML = "";
+  elSlots.classList.toggle("tableau", spread.id === "gt");
+  /* span2：以半格欄位排出金字塔的交錯置中（欄寬 = 半張牌扣掉半個間距） */
+  elSlots.style.gridTemplateColumns = spread.span2
+    ? `repeat(${spread.cols}, calc(var(--cw) / 2 - 7px))`
+    : `repeat(${spread.cols}, var(--cw))`;
+
+  for (let i = 0; i < spread.count; i++) {
+    const slot = document.createElement("div");
+    slot.className = "slot";
+    slot.dataset.idx = i;
+
+    const label = document.createElement("div");
+    label.className = "pos-label";
+    if (spread.id === "gt") {
+      label.classList.add("house");
+      label.textContent = `${CARDS[i].zh}宮`;
+      label.title = `第 ${i + 1} 宮（${CARDS[i].zh}）：${CARDS[i].keys}`;
+    } else {
+      label.textContent = spread.positions[i];
+    }
+
+    const well = document.createElement("div");
+    well.className = "card-well";
+
+    slot.appendChild(label);
+    slot.appendChild(well);
+
+    /* 大盤最後四張置中（8 欄下的 3~6 欄） */
+    if (spread.id === "gt" && i >= 32) {
+      slot.style.gridColumn = String(3 + (i - 32));
+    }
+    /* 十字陣、金字塔等自訂座標 */
+    if (spread.place) {
+      const col = spread.place[i][0];
+      slot.style.gridColumn = spread.span2 ? `${col} / span 2` : String(col);
+      slot.style.gridRow = String(spread.place[i][1]);
+    }
+    elSlots.appendChild(slot);
+  }
+}
+
+/* 補牌：在既有牌陣尾端加掛澄清牌槽位 */
+function addExtensionSlots() {
+  const ext = spread.extend;
+  for (let k = 0; k < ext.count; k++) {
+    const i = spread.count + k;
+    const slot = document.createElement("div");
+    slot.className = "slot";
+    slot.dataset.idx = i;
+    slot.style.gridRow = "2";
+    slot.style.gridColumn = String(2 + k * 2);   /* 第二列 2、4 欄置中 */
+    const label = document.createElement("div");
+    label.className = "pos-label";
+    label.textContent = ext.labels[k];
+    const well = document.createElement("div");
+    well.className = "card-well";
+    slot.appendChild(label);
+    slot.appendChild(well);
+    elSlots.appendChild(slot);
+  }
+}
+
+/* ── 牌堆扇形 ─────────────────────────────── */
+function buildFan() {
+  elFan.innerHTML = "";
+  deck.forEach((cardIdx, pos) => {
+    const c = document.createElement("button");
+    c.className = "fan-card";
+    c.dataset.deckPos = pos;
+    c.setAttribute("aria-label", `蓋著的牌 第 ${pos + 1} 張`);
+    c.style.transform = `rotate(${(pos - deck.length / 2) * 0.4}deg)`;
+    c.addEventListener("click", () => drawFromFan(c, pos));
+    elFan.appendChild(c);
+  });
+}
+
+function drawFromFan(el, deckPos) {
+  if (phase !== "draw" || drawn.length >= target || el.classList.contains("gone")) return;
+  el.classList.add("gone");
+  placeCard(deck[deckPos]);
+}
+
+elAuto.addEventListener("click", () => {
+  if (autoTimer || phase !== "draw") return;
+  const remainingEls = [...elFan.querySelectorAll(".fan-card:not(.gone)")];
+  let k = 0;
+  autoTimer = setInterval(() => {
+    if (drawn.length >= target || k >= remainingEls.length) {
+      clearInterval(autoTimer); autoTimer = null; return;
+    }
+    const el = remainingEls[k++];
+    el.classList.add("gone");
+    placeCard(deck[el.dataset.deckPos]);
+  }, 140);
+});
+
+elExtend.addEventListener("click", () => {
+  elExtend.hidden = true;
+  target = spread.count + spread.extend.count;
+  addExtensionSlots();
+  updateCaption();
+});
+
+/* ── 發牌與翻面 ───────────────────────────── */
+function placeCard(cardIdx) {
+  const slotIdx = drawn.length;
+  const card = CARDS[cardIdx];
+  drawn.push(card);
+
+  const well = elSlots.querySelector(`.slot[data-idx="${slotIdx}"] .card-well`);
+  well.classList.add("filled");
+
+  const c3 = document.createElement("div");
+  c3.className = "card3d dealing";
+  c3.innerHTML = `
+    <div class="cface front">
+      <div class="c-num"><span>№ ${card.n}</span><span class="pol ${card.pol}">${POL_MARK[card.pol].slice(0, 1)}</span></div>
+      <div class="c-art">${card.glyph}</div>
+      <div class="c-zh">${card.zh}</div>
+      <div class="c-latin">${card.latin}</div>
+    </div>
+    <div class="cface back"></div>`;
+  well.appendChild(c3);
+
+  /* 生成的牌面圖：載入成功才切換版式，缺圖則維持符號版 */
+  const front = c3.querySelector(".cface.front");
+  const img = document.createElement("img");
+  img.className = "c-img";
+  img.alt = "";
+  img.addEventListener("load", () => front.classList.add("has-img"));
+  img.addEventListener("error", () => img.remove());
+  img.src = card.img;
+  front.appendChild(img);
+
+  requestAnimationFrame(() => {
+    setTimeout(() => { c3.classList.remove("dealing"); c3.classList.add("revealed"); }, 320);
+  });
+
+  /* 牌義跟著牌走：滑過顯示、點按切換（觸控） */
+  c3.classList.add("clickable");
+  c3.addEventListener("mouseenter", () => showTip(slotIdx, c3));
+  c3.addEventListener("mouseleave", hideTip);
+  c3.addEventListener("click", () => {
+    if (tipSlot === slotIdx && elTip.classList.contains("on")) hideTip();
+    else showTip(slotIdx, c3);
+  });
+
+  addEntry(card, slotIdx);
+  updateCaption();
+
+  if (drawn.length === target) finishReading();
+}
+
+function updateCaption() {
+  const left = target - drawn.length;
+  elCaption.innerHTML = left > 0
+    ? `還需抽 <b>${left}</b> 張 ── 憑直覺，選你被召喚的那一張`
+    : `牌已抽齊 ── 解讀寫在下方的紙上`;
+}
+
+/* ── 解讀帳冊 ─────────────────────────────── */
+function addEntry(card, slotIdx) {
+  elReading.classList.add("on");
+  $("#reading-sub").textContent = spread.name;
+
+  const e = document.createElement("div");
+  e.className = "entry";
+  e.dataset.idx = slotIdx;
+  e.innerHTML = `
+    <div class="e-pos">${posName(slotIdx)}</div>
+    <div class="e-head">
+      <span class="e-glyph">${card.glyph}</span>
+      <span class="e-name">${card.zh}<small style="color:var(--ink-soft)"> · ${card.latin}</small></span>
+      <span class="pol ${card.pol}">${POL_MARK[card.pol]}</span>
+    </div>
+    <div class="e-keys">${card.keys}</div>
+    <p class="e-text">${card.text}${gtHouseNote(card, slotIdx)}</p>`;
+  elEntries.appendChild(e);
+}
+
+function gtHouseNote(card, slotIdx) {
+  if (spread.id === "houses" && slotIdx < 12) {
+    const h = HOUSES[slotIdx];
+    return `<br><em>${h.label}（${h.sign}）掌管${h.title}：${h.hint}——${card.noun}正在這個領域發酵。</em>`;
+  }
+  if (spread.id !== "gt") return "";
+  const house = CARDS[slotIdx];
+  if (house.n === card.n) return `<br><em>此牌落在自己的宮位——「${card.zh}」的主題在此刻格外強烈。</em>`;
+  return `<br><em>落於${house.zh}宮：${card.noun}${house.mod}。</em>`;
+}
+
+function finishReading() {
+  /* 補牌完成時不重複產生組合解讀 */
+  if (drawn.length > spread.count) {
+    elAiBlock.hidden = false;
+    elClosing.hidden = false;
+    updateHistoryRecord();
+    return;
+  }
+
+  if (spread.extend) elExtend.hidden = false;
+  elAiBlock.hidden = false;
+  saveHistoryRecord();
+
+  const combos = spread.combos(drawn);
+  if (combos.length) {
+    const block = document.createElement("div");
+    block.className = "combo-block";
+    block.innerHTML = `<div class="cb-title">牌 與 牌 之 間</div>` + combos.map((c) => `
+      <p class="combo"><b>${c.a.zh}</b><span class="arrow">✦</span><b>${c.b.zh}</b>
+      　<small style="color:var(--ink-soft)">${c.label}</small><br>${c.text}</p>`).join("");
+    elCombos.appendChild(block);
+  }
+
+  if (spread.id === "gt") {
+    const man = drawn.findIndex((c) => c.n === 28);
+    const woman = drawn.findIndex((c) => c.n === 29);
+    const block = document.createElement("div");
+    block.className = "combo-block";
+    block.innerHTML = `<div class="cb-title">指 示 牌 落 點</div>
+      <p class="combo">「男人」落在第 ${man + 1} 宮（${CARDS[man].zh}宮）——他的處境圍繞著「${CARDS[man].keys.split("・")[0]}」。</p>
+      <p class="combo">「女人」落在第 ${woman + 1} 宮（${CARDS[woman].zh}宮）——她的處境圍繞著「${CARDS[woman].keys.split("・")[0]}」。</p>
+      <p class="combo" style="color:var(--ink-soft)">讀大盤時，以你的指示牌為中心：它周圍八張牌是眼下的處境，它注視的方向是未來。</p>`;
+    elCombos.appendChild(block);
+  }
+
+  elClosing.hidden = false;
+}
+
+/* ── AI 解讀提示詞 ────────────────────────── */
+function buildAiPrompt() {
+  const L = [];
+  L.push("你是一位經驗豐富的雷諾曼（Petit Lenormand）占卜解讀師，熟悉牌義、位置意義與牌與牌之間的組合技法。請以繁體中文為我解讀以下牌陣。");
+  L.push("");
+  L.push(`【盤面】${spread.name}（共 ${drawn.length} 張）`);
+  if (spread.id === "gt") {
+    L.push("排列方式：Grand Tableau 大盤，8×4 加底部置中 4 張（第 33–36 張）。第 n 張牌落在第 n 宮，宮位以傳統 36 張牌的順序命名。");
+  } else if (spread.id === "houses") {
+    L.push("排列方式：占星十二宮位，每宮一張牌。宮位對應如下：");
+    HOUSES.forEach((h) => L.push(`- ${h.label}（${h.sign}）｜${h.title}：${h.hint}`));
+  } else if (spread.positions) {
+    L.push(`位置依序為：${spread.positions.join("、")}${drawn.length > spread.count ? "，另補兩張澄清牌" : ""}。`);
+  }
+  L.push("");
+  L.push("【抽牌結果】（依抽出順序）");
+  drawn.forEach((c, i) => {
+    L.push(`${i + 1}. ${posName(i)}：${c.zh} ${c.latin}（№${c.n}，撲克對應 ${c.pk}）— 關鍵詞：${c.keys}`);
+  });
+  L.push("");
+  L.push("【請提供】");
+  L.push("1. 整體牌陣的基調與核心訊息");
+  L.push("2. 逐一位置的解讀（牌義結合位置意義）");
+  L.push("3. 相鄰或相關牌之間的組合意義");
+  if (spread.id === "gt") {
+    L.push("4. 以指示牌（男人／女人，視我的身分）為中心，解讀其周圍八張牌與注視方向");
+    L.push(`5. 給問卜者的具體建議（${currentTone()}）`);
+  } else {
+    L.push(`4. 給問卜者的具體建議（${currentTone()}）`);
+  }
+  L.push("");
+  const q = $("#q-input").value.trim();
+  L.push(q ? `我的問題是：${q}` : "我的問題是：〔請把你想問的事寫在這裡〕");
+  return L.join("\n");
+}
+
+/* ── 建議語氣（可調整並記住） ─────────────── */
+const TONE_KEY = "lenormand-tone", TONE_CUSTOM_KEY = "lenormand-tone-custom";
+const elTone = $("#tone-select"), elToneCustom = $("#tone-custom");
+
+function currentTone() {
+  if (elTone.value === "__custom__") {
+    return elToneCustom.value.trim() || "溫暖但誠實";
+  }
+  return elTone.value;
+}
+
+function toneChanged() {
+  elToneCustom.hidden = elTone.value !== "__custom__";
+  try {
+    localStorage.setItem(TONE_KEY, elTone.value);
+    localStorage.setItem(TONE_CUSTOM_KEY, elToneCustom.value);
+  } catch (e) {}
+  /* 提示詞已產生時，語氣改了就即時更新 */
+  if (!elAiPrompt.hidden) elAiPrompt.value = buildAiPrompt();
+}
+
+elTone.addEventListener("change", toneChanged);
+elToneCustom.addEventListener("input", toneChanged);
+
+(function restoreTone() {
+  try {
+    const saved = localStorage.getItem(TONE_KEY);
+    if (saved && [...elTone.options].some((o) => o.value === saved)) elTone.value = saved;
+    elToneCustom.value = localStorage.getItem(TONE_CUSTOM_KEY) || "";
+  } catch (e) {}
+  elToneCustom.hidden = elTone.value !== "__custom__";
+})();
+
+$("#btn-ai").addEventListener("click", () => {
+  elAiPrompt.value = buildAiPrompt();
+  elAiPrompt.hidden = false;
+  $("#btn-copy").hidden = false;
+  elAiPrompt.style.height = "auto";
+  elAiPrompt.style.height = Math.min(elAiPrompt.scrollHeight + 8, 560) + "px";
+  elAiPrompt.focus();
+  elAiPrompt.select();
+});
+
+$("#btn-copy").addEventListener("click", async () => {
+  const btn = $("#btn-copy");
+  elAiPrompt.focus();
+  elAiPrompt.select();
+  let ok = false;
+  try {
+    await navigator.clipboard.writeText(elAiPrompt.value);
+    ok = true;
+  } catch (e) {
+    try { ok = document.execCommand("copy"); } catch (e2) { ok = false; }
+  }
+  btn.textContent = ok ? "已複製 ✓" : "請手動全選複製";
+  setTimeout(() => { btn.textContent = "複製全文"; }, 2200);
+});
+
+/* ── 牌義浮框（跟著牌走） ─────────────────── */
+const elTip = document.createElement("div");
+elTip.id = "tip";
+document.body.appendChild(elTip);
+let tipSlot = -1;
+
+function tipHtml(slotIdx) {
+  const card = drawn[slotIdx];
+  return `
+    <div class="tip-pos">${posName(slotIdx)}</div>
+    <div class="tip-name"><span class="tip-glyph">${card.glyph}</span> ${card.zh}
+      <small>${card.latin} · ${card.pk}</small></div>
+    <div class="tip-keys">${card.keys}</div>
+    <p class="tip-text">${card.text}${gtHouseNote(card, slotIdx)}</p>`;
+}
+
+function showTip(slotIdx, cardEl) {
+  tipSlot = slotIdx;
+  elTip.innerHTML = tipHtml(slotIdx);
+  elTip.classList.add("on");
+  const r = cardEl.getBoundingClientRect();
+  const vw = document.documentElement.clientWidth;
+  const tw = elTip.offsetWidth, th = elTip.offsetHeight;
+  let x, y;
+  if (r.right + 14 + tw <= vw - 6) {          /* 右側 */
+    x = r.right + 14; y = r.top + (r.height - th) / 2;
+  } else if (r.left - 14 - tw >= 6) {          /* 左側 */
+    x = r.left - 14 - tw; y = r.top + (r.height - th) / 2;
+  } else {                                     /* 下方置中（窄螢幕） */
+    x = Math.min(Math.max(r.left + (r.width - tw) / 2, 6), vw - tw - 6);
+    y = r.bottom + 12;
+  }
+  y = Math.max(y, 6);
+  elTip.style.left = (x + window.scrollX) + "px";
+  elTip.style.top = (y + window.scrollY) + "px";
+}
+
+function hideTip() {
+  tipSlot = -1;
+  elTip.classList.remove("on");
+}
+
+/* 點牌以外的地方 → 收起浮框（行動裝置） */
+document.addEventListener("click", (e) => {
+  if (!e.target.closest(".card3d")) hideTip();
+});
+
+/* ── 占卜歷史（localStorage） ─────────────── */
+const HIST_KEY = "lenormand-history";
+let suppressSave = false;   // 重看舊紀錄時不重複保存
+let currentRecId = null;
+
+function loadHist() {
+  try { return JSON.parse(localStorage.getItem(HIST_KEY)) || []; }
+  catch (e) { return []; }
+}
+function storeHist(list) {
+  try { localStorage.setItem(HIST_KEY, JSON.stringify(list.slice(0, 50))); }
+  catch (e) { /* 隱私模式等情況下靜默略過 */ }
+}
+
+function saveHistoryRecord() {
+  if (suppressSave) return;
+  const rec = {
+    id: Date.now(),
+    when: new Date().toLocaleString("zh-TW", { hour12: false }),
+    spread: spread.id,
+    spreadName: spread.name,
+    q: $("#q-input").value.trim(),
+    cards: drawn.map((c) => c.n),
+  };
+  currentRecId = rec.id;
+  const list = loadHist();
+  list.unshift(rec);
+  storeHist(list);
+  renderHistory();
+}
+
+function updateHistoryRecord() {
+  if (suppressSave || currentRecId === null) return;
+  const list = loadHist();
+  const rec = list.find((r) => r.id === currentRecId);
+  if (rec) {
+    rec.cards = drawn.map((c) => c.n);
+    rec.q = $("#q-input").value.trim();
+    storeHist(list);
+    renderHistory();
+  }
+}
+
+function renderHistory() {
+  const list = loadHist();
+  const box = $("#hist-list");
+  box.innerHTML = "";
+  $("#btn-hist-clear").hidden = list.length === 0;
+  if (!list.length) {
+    box.innerHTML = `<p class="hist-empty">尚無紀錄——完成一次占卜後會自動保存在這裡。</p>`;
+    return;
+  }
+  list.forEach((rec) => {
+    const glyphs = rec.cards.slice(0, 12).map((n) => CARDS[n - 1].glyph).join(" ")
+      + (rec.cards.length > 12 ? " …" : "");
+    const item = document.createElement("div");
+    item.className = "hist-item";
+    item.innerHTML = `
+      <span class="h-when">${rec.when}</span>
+      <span class="h-spread">${rec.spreadName}</span>
+      ${rec.q ? `<div class="h-q">「${rec.q}」</div>` : ""}
+      <div class="h-cards">${glyphs}</div>
+      <div class="h-actions">
+        <button class="ghost-btn h-view">重看</button>
+        <button class="ghost-btn h-del">刪除</button>
+      </div>`;
+    item.querySelector(".h-view").addEventListener("click", () => replayReading(rec));
+    item.querySelector(".h-del").addEventListener("click", () => {
+      storeHist(loadHist().filter((r) => r.id !== rec.id));
+      if (currentRecId === rec.id) currentRecId = null;
+      renderHistory();
+    });
+    box.appendChild(item);
+  });
+}
+
+$("#btn-hist-clear").addEventListener("click", () => {
+  storeHist([]);
+  currentRecId = null;
+  renderHistory();
+});
+
+/* 重看：把紀錄還原到牌桌與解讀帳冊（不重新保存） */
+function replayReading(rec) {
+  const s = SPREADS.find((x) => x.id === rec.spread);
+  if (!s) return;
+  const idx = SPREADS.indexOf(s);
+  document.querySelectorAll(".spread-btn").forEach((b, i) => b.classList.toggle("active", i === idx));
+  spread = s;
+  resetTable();
+  $("#q-input").value = rec.q || "";
+  phase = "draw";
+  elRitual.hidden = true;
+  elCaption.hidden = false;
+  elFanScroll.hidden = true;   /* 重看不需要牌堆 */
+
+  suppressSave = true;
+  const base = Math.min(rec.cards.length, s.count);
+  for (let i = 0; i < base; i++) placeCard(rec.cards[i] - 1);
+  if (rec.cards.length > s.count && s.extend) {
+    target = s.count + s.extend.count;
+    addExtensionSlots();
+    for (let i = s.count; i < rec.cards.length; i++) placeCard(rec.cards[i] - 1);
+  }
+  suppressSave = false;
+
+  currentRecId = null;         /* 重看狀態下不再更新舊紀錄 */
+  elExtend.hidden = true;      /* 重看模式沒有牌堆，不提供補牌 */
+  elAuto.hidden = true;
+  elCaption.textContent = `重看紀錄 ── ${rec.when}`;
+  elTable.classList.add("on");
+  elTable.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+renderHistory();
+</script>
