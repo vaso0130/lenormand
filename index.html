@@ -360,6 +360,24 @@
   .ghost-btn.gold:hover:not(:disabled) { border-color: var(--gold); box-shadow: 0 0 14px rgba(201,164,92,.25); }
   .ghost-btn:disabled { opacity: .35; cursor: not-allowed; }
 
+  /* ── 擲卦（易經六爻） ─────────────────────── */
+  #cast-lines {
+    display: flex; flex-direction: column-reverse;   /* 由下而上 */
+    align-items: center; gap: 7px;
+    min-height: 200px; padding: 18px 0 10px;
+    justify-content: flex-start;
+  }
+  .cast-row {
+    display: flex; align-items: center; gap: 14px;
+    font-size: 14px; color: var(--ivory);
+  }
+  .cast-row .yao-idx { width: 3em; text-align: right; color: var(--gold-dim); font-size: 12px; letter-spacing: .1em; }
+  .cast-row .yao-coins { color: var(--muted); font-size: 12.5px; letter-spacing: .12em; width: 7.5em; }
+  .cast-row .yao-line { font-family: monospace; font-size: 20px; letter-spacing: 0; color: var(--gold-bright); width: 3.2em; text-align: center; }
+  .cast-row .yao-note { font-size: 12px; color: var(--muted); width: 7em; }
+  .cast-row .yao-note.moving { color: var(--red); }
+  .cast-row.placeholder { opacity: .25; }
+
   /* ── 洗牌與切牌儀式 ───────────────────────── */
   #stack-wrap { display: flex; justify-content: center; align-items: center; padding: 22px 0 8px; min-height: 200px; }
   #stack { position: relative; width: 116px; height: 174px; }
@@ -615,6 +633,13 @@
     <div id="slots-scroll"><div id="slots"></div></div>
 
     <div id="deck-area">
+      <div id="cast" hidden>
+        <p class="deck-caption" id="cast-caption">三枚銅錢,擲六次——由下而上,六爻成卦。</p>
+        <div id="cast-lines" aria-live="polite"></div>
+        <div class="deck-tools">
+          <button class="ghost-btn gold" id="btn-throw">擲 錢</button>
+        </div>
+      </div>
       <div id="ritual">
         <p class="deck-caption" id="ritual-caption">全新牌序——先洗牌（建議七次以上），再切牌，然後開始抽卡。</p>
         <div id="stack-wrap">
@@ -1828,8 +1853,11 @@ YI_CARDS.forEach((c, i) => {
 });
 
 const YI_SPREADS = [
-  { id:"yi-one", name:"單卦・一事一問", count:1, cols:1,
-    desc:"心中默念所問之事，抽一卦——卦辭就是答案的骨架。",
+  { id:"yi-cast", name:"擲卦・六爻成卦", count:2, cols:2, cast:true,
+    desc:"正統起卦法：三枚銅錢擲六次，由下而上成卦。老陰老陽為動爻——本卦為體，之卦為變。",
+    positions:["本卦・體","之卦・變"], combos: () => [] },
+  { id:"yi-one", name:"單卦・快抽", count:1, cols:1,
+    desc:"沒有銅錢的時候——心中默念所問之事，直接抽一卦。",
     positions:["本卦"], combos: () => [] },
   { id:"yi-three", name:"三卦・三才", count:3, cols:3,
     desc:"天時、地利、人和——一件事的三個支點。",
@@ -2382,7 +2410,18 @@ function resetTable() {
     : "先洗牌、切牌，再點選你被吸引的那幾張。";
   buildSlots();
   buildStack();
-  elRitual.hidden = false;
+  /* 擲卦盤面:以銅錢起卦,不走洗切抽流程 */
+  const isCast = !!spread.cast;
+  elCast.hidden = !isCast;
+  if (isCast) {
+    phase = "cast";
+    castLines = [];
+    castInfo = null;
+    btnThrow.disabled = false;
+    $("#cast-caption").textContent = "三枚銅錢,擲六次——由下而上,六爻成卦。";
+    renderCastLines();
+  }
+  elRitual.hidden = isCast;
   elStackWrap.hidden = false;
   elCutScroll.hidden = true;
   btnBegin.disabled = true;
@@ -2480,6 +2519,85 @@ function doCut(pos) {
   exitCutView();
   ritualStatus();
   if (pos > 0) elRitualCaption.textContent = `已從第 ${pos + 1} 張切牌，下疊翻上成為牌頂。` + (shuffleCount ? "" : "（記得也要洗牌）");
+}
+
+/* ── 擲卦（易經：三枚銅錢六擲起卦） ────────── */
+const elCast = $("#cast"), elCastLines = $("#cast-lines"), btnThrow = $("#btn-throw");
+let castLines = [];   // 由下而上的六爻:{v: 6|7|8|9, coins:[2|3,…]}
+let castInfo = null;  // {lines, moving, ben, zhi}
+
+/* 三爻(由下而上)→ 八卦索引:乾兌離震巽坎艮坤 */
+const TRIGRAM = { "111":0, "110":1, "101":2, "100":3, "011":4, "010":5, "001":6, "000":7 };
+/* 文王卦序:KW[下卦][上卦] */
+const KW = [
+  [1,43,14,34,9,5,26,11],
+  [10,58,38,54,61,60,41,19],
+  [13,49,30,55,37,63,22,36],
+  [25,17,21,51,42,3,27,24],
+  [44,28,50,32,57,48,18,46],
+  [6,47,64,40,59,29,4,7],
+  [33,31,56,62,53,39,52,15],
+  [12,45,35,16,20,8,23,2],
+];
+function hexNum(bits) {
+  return KW[TRIGRAM[bits.slice(0, 3).join("")]][TRIGRAM[bits.slice(3, 6).join("")]];
+}
+const YAO_NAMES = ["初爻","二爻","三爻","四爻","五爻","上爻"];
+/* 卦的簡稱:乾為天→乾、天雷無妄→無妄 */
+function yiShort(n) {
+  const zh = YI_CARDS[n - 1].zh;
+  return zh.includes("為") ? zh[0] : zh.slice(2);
+}
+
+function renderCastLines() {
+  elCastLines.innerHTML = "";
+  for (let i = 0; i < 6; i++) {
+    const row = document.createElement("div");
+    const l = castLines[i];
+    if (!l) {
+      row.className = "cast-row placeholder";
+      row.innerHTML = `<span class="yao-idx">${YAO_NAMES[i]}</span>
+        <span class="yao-coins">・・・</span>
+        <span class="yao-line">─</span>
+        <span class="yao-note">未擲</span>`;
+    } else {
+      const yang = l.v === 7 || l.v === 9;
+      const moving = l.v === 6 || l.v === 9;
+      row.className = "cast-row";
+      row.innerHTML = `<span class="yao-idx">${YAO_NAMES[i]}</span>
+        <span class="yao-coins">${l.coins.map((c) => (c === 3 ? "背" : "字")).join("・")}</span>
+        <span class="yao-line">${yang ? "━━━" : "━&nbsp;━"}</span>
+        <span class="yao-note${moving ? " moving" : ""}">${l.v === 9 ? "老陽・動 ○" : l.v === 6 ? "老陰・動 ✕" : l.v === 7 ? "少陽" : "少陰"}</span>`;
+    }
+    elCastLines.appendChild(row);
+  }
+}
+
+btnThrow.addEventListener("click", () => {
+  if (phase !== "cast" || castLines.length >= 6) return;
+  const coins = [0, 0, 0].map(() => (rand01() < 0.5 ? 2 : 3));  /* 字=2、背=3 */
+  castLines.push({ v: coins[0] + coins[1] + coins[2], coins });
+  renderCastLines();
+  if (castLines.length === 6) finishCast();
+});
+
+function finishCast() {
+  phase = "draw";
+  const bits = castLines.map((l) => (l.v === 7 || l.v === 9 ? 1 : 0));
+  const moving = castLines.map((l, i) => (l.v === 6 || l.v === 9 ? i : -1)).filter((i) => i >= 0);
+  const ben = hexNum(bits);
+  let zhi = null;
+  if (moving.length) {
+    zhi = hexNum(bits.map((b, i) => (moving.includes(i) ? 1 - b : b)));
+  }
+  castInfo = { lines: castLines.map((l) => l.v), moving, ben, zhi };
+  target = zhi ? 2 : 1;
+  $("#cast-caption").textContent = zhi
+    ? `得「${yiShort(ben)}之${yiShort(zhi)}」——動爻:${moving.map((i) => YAO_NAMES[i]).join("、")};本卦為體,之卦為變。`
+    : `得「${yiShort(ben)}」,六爻皆靜——以本卦卦辭為斷。`;
+  btnThrow.disabled = true;
+  setTimeout(() => placeCard(ben - 1), 450);
+  if (zhi) setTimeout(() => placeCard(zhi - 1), 1150);
 }
 
 btnBegin.addEventListener("click", () => {
@@ -2790,6 +2908,13 @@ function buildAiPrompt() {
   } else if (spread.positions) {
     L.push(`位置依序為：${spread.positions.join("、")}${drawn.length > spread.count ? "，另補兩張澄清牌" : ""}。`);
   }
+  if (spread.cast && castInfo) {
+    const vName = (v) => (v === 9 ? "老陽・動" : v === 6 ? "老陰・動" : v === 7 ? "少陽" : "少陰");
+    L.push(`起卦方式：三枚銅錢六擲。六爻由下而上：${castInfo.lines.map((v, i) => `${YAO_NAMES[i]} ${v}（${vName(v)}）`).join("、")}。`);
+    L.push(castInfo.moving.length
+      ? `此占得「${yiShort(castInfo.ben)}之${yiShort(castInfo.zhi)}」。動爻（變爻）：${castInfo.moving.map((i) => YAO_NAMES[i]).join("、")}。本卦為體、之卦為變——請務必逐一解讀動爻的爻辭，並說明本卦如何變往之卦。`
+      : `此占得「${yiShort(castInfo.ben)}」，六爻皆靜，以本卦卦辭為斷。`);
+  }
   L.push("");
   L.push("【抽牌結果】（依抽出順序）");
   drawn.forEach((c, i) => {
@@ -2947,6 +3072,7 @@ function saveHistoryRecord() {
     q: $("#q-input").value.trim(),
     cards: drawn.map((c) => c.n),
     revs: deckDef.reversible ? drawnRev.map((r) => (r ? 1 : 0)) : undefined,
+    cast: spread.cast && castInfo ? castInfo : undefined,
   };
   currentRecId = rec.id;
   const list = loadHist();
@@ -3027,6 +3153,13 @@ function replayReading(rec) {
   $("#q-input").value = rec.q || "";
   phase = "draw";
   elRitual.hidden = true;
+  elCast.hidden = true;        /* 重看不需要重擲 */
+  castInfo = rec.cast || null;
+  if (spread.cast && castInfo) {
+    $("#spread-hint").textContent = castInfo.moving && castInfo.moving.length
+      ? `當時動爻:${castInfo.moving.map((i) => YAO_NAMES[i]).join("、")}`
+      : "當時六爻皆靜";
+  }
   elCaption.hidden = false;
   elFanScroll.hidden = true;   /* 重看不需要牌堆 */
 
@@ -3197,13 +3330,17 @@ if (location.search.includes("rwdtest")) {
   const idx = SPREADS.findIndex((s) => s.id === id);
   if (idx >= 0) {
     document.querySelectorAll(".spread-btn")[idx].click();
-    deck = riffle(deck); shuffleCount++;
-    btnBegin.disabled = false;
-    btnBegin.click();
-    [...elFan.querySelectorAll(".fan-card")].slice(0, target).forEach((el, i) => {
-      el.classList.add("gone");
-      placeCard(deck[i]);
-    });
+    if (spread.cast) {
+      for (let i = 0; i < 6; i++) btnThrow.click();   /* 擲卦盤面:擲滿六爻 */
+    } else {
+      deck = riffle(deck); shuffleCount++;
+      btnBegin.disabled = false;
+      btnBegin.click();
+      [...elFan.querySelectorAll(".fan-card")].slice(0, target).forEach((el, i) => {
+        el.classList.add("gone");
+        placeCard(deck[i]);
+      });
+    }
   }
 }
 </script>
