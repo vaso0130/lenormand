@@ -1,0 +1,229 @@
+<title>燭光南苑 · 南洋館</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="hall.css">
+
+<div class="wrap">
+  <header>
+    <div class="plate">
+      <p class="eyebrow">Le Jardin des Mers du Sud</p>
+      <h1>燭光南苑</h1>
+      <p class="subtitle">佛塔的八個角、爪哇的三十五天、湄公河畔翻開的詩集——南洋的命運,寫在日子本身。</p>
+    </div>
+  </header>
+
+  <nav class="halls-nav">
+    <a href="index.html">牌桌館</a>
+    <a href="astro.html">占星館</a>
+    <a href="numbers.html">數字館</a>
+    <a href="bazi.html">八字館</a>
+    <a href="shi.html">式占館</a>
+    <a href="nanyang.html" class="here">南洋館</a>
+    <a href="mix.html">MIX 三術合參</a>
+  </nav>
+
+  <p class="section-label">選擇術數</p>
+  <div class="sys-row" id="sys"></div>
+
+  <section class="panel" id="panel">
+    <h2 id="p-title"></h2>
+    <span class="hint" id="p-hint"></span>
+    <div id="form-birth">
+      <p class="fieldset-label">生辰資料</p>
+      <div class="form-grid">
+        <div class="field"><label>出生日期</label><input id="b-date" type="date"></div>
+        <div class="field" id="f-time"><label>出生時間</label><input id="b-time" type="time" value="12:00">
+          <div class="note">緬曆週三分晝(水曜)夜(羅睺);泰曆週三 18:00 後屬夜佛</div></div>
+      </div>
+    </div>
+    <div class="form-grid" style="margin-top:14px">
+      <div class="field full"><label>你的問題</label>
+        <input id="q-input" type="text" maxlength="200" placeholder="默想並寫下你想問的事(翹傳開卷建議必填)"></div>
+    </div>
+    <div class="btn-row">
+      <button class="gold-btn" id="btn-go">起 算</button>
+      <span class="hint" id="go-hint"></span>
+    </div>
+  </section>
+
+  <section id="out"></section>
+
+  <section class="prompt-sec" id="prompt-sec" hidden>
+    <p class="section-label">AI 解讀提示詞</p>
+    <textarea class="prompt-box" id="prompt-box" readonly></textarea>
+    <div class="btn-row">
+      <button class="gold-btn" id="btn-copy">複製提示詞</button>
+      <span class="copy-ok" id="copy-ok" hidden>已複製,貼給任何 AI 即可。</span>
+    </div>
+  </section>
+
+  <p class="footnote">
+    緬曆換歲以潑水節(約 4/17)、泰曆生肖以宋干節(4/13)為<b>民俗簡式</b>;爪哇威頓以 1945-08-17(Jumat Legi)錨定;<br>
+    翹傳開卷為《金雲翹傳》選句卅五,以 <b>crypto</b> 真隨機翻卷——傳統求整部,此為選本,誠實註明。
+  </p>
+</div>
+
+<script src="divine-core.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+
+const SYS = [
+  { id: "maha", name: "緬甸八曜", sub: "Mahabote・မဟာဘုတ်", birth: true,
+    hint: "一週八天、八獸八方:你生在哪一曜,佛塔的哪個角是你的角——並附摩訶菩提命盤起盤參數。" },
+  { id: "weton", name: "爪哇威頓", sub: "Weton・Primbon", birth: true,
+    hint: "七日星期與五日市集週疊成三十五天一輪——你的威頓、靈數(neptu)與下一個本命日。" },
+  { id: "thai", name: "泰國七曜佛日", sub: "วันเกิด・Wan Kerd", birth: true,
+    hint: "生於星期幾,決定你的本命佛姿、本命色與忌色——泰國人一生隨身的護身知識。" },
+  { id: "kieu", name: "翹傳開卷", sub: "Bói Kiều・越南", birth: false,
+    hint: "默想問題,拜過徐海王、覺緣師太、翠翹仙,翻開《金雲翹傳》——指到哪句,命運答哪句。" }
+];
+let sysId = "maha";
+
+function renderSys() {
+  $("sys").innerHTML = "";
+  SYS.forEach(s => {
+    const b = document.createElement("button");
+    b.className = "sys-btn" + (s.id === sysId ? " active" : "");
+    b.innerHTML = '<span class="d-name">' + s.name + '</span><span class="d-sub">' + s.sub + '</span>';
+    b.onclick = () => { sysId = s.id; updateForm(); renderSys(); };
+    $("sys").appendChild(b);
+  });
+}
+function updateForm() {
+  const s = SYS.find(x => x.id === sysId);
+  $("form-birth").hidden = !s.birth;
+  $("p-title").textContent = s.name;
+  $("p-hint").textContent = s.hint;
+  $("btn-go").textContent = s.id === "kieu" ? "焚 香 開 卷" : "起 算";
+  $("out").innerHTML = ""; $("prompt-sec").hidden = true;
+}
+renderSys(); updateForm();
+
+const PK = "dc-ny-profile";
+try { const p = JSON.parse(localStorage.getItem(PK) || "{}"); if (p.bd) { $("b-date").value = p.bd; $("b-time").value = p.bt || "12:00"; } } catch (e) {}
+
+function card(t, en, body) { return '<div class="result-card"><h3>' + t + (en ? '<span class="en">' + en + "</span>" : "") + "</h3>" + body + "</div>"; }
+function fail(msg) { $("go-hint").textContent = msg; return new Error(msg); }
+function readBirth() {
+  const dv = $("b-date").value; if (!dv) throw fail("請填出生日期");
+  const tv = $("b-time").value || "12:00";
+  const [y, m, d] = dv.split("-").map(Number), [h, mi] = tv.split(":").map(Number);
+  return { y, m, d, h, mi, str: dv + " " + tv };
+}
+
+/* ── 緬甸八曜 + Mahabote ── */
+function runMaha(out, pr) {
+  const B = readBirth();
+  const idx = DC.bur8Index(B.y, B.m, B.d, B.h);
+  const [yao, animal, dir, planet, trait] = DC.BUR8[idx];
+  const me = DC.mahaboteME(B.y, B.m, B.d);
+  const todayIdx = DC.bur8Index(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate(), 12);
+  out.push(card("八曜生辰", "生於" + yao + "日",
+    '<p class="lead" style="font-size:20px">' + yao + "・" + animal + '<span style="font-size:13px;color:var(--muted)">(守護星:' + planet + ")</span></p>" +
+    "<p>" + trait + "。</p>" +
+    "<p>你的佛塔方位角在<b style='color:var(--gold-bright)'>" + dir + "</b>——緬甸人到佛塔,會去自己生曜的角落澆水獻花,一歲澆一杯,再加一杯敬未來。行運低迷時,朝" + dir + "方禮敬最能補氣。</p>" +
+    "<p>今日值" + DC.BUR8[todayIdx][0] + "(" + DC.BUR8[todayIdx][1] + ")——" + (todayIdx === idx ? "正是你的本命曜日,宜行大事、宜還願" : "與你的" + yao + "相參看今日行事") + "。</p>"));
+  out.push(card("摩訶菩提命盤(起盤參數)", "Mahabote",
+    '<div class="kv"><span><b>緬曆年</b>' + me.ME + " ME</span><span><b>年餘數</b>" + me.r + "(緬曆年 ÷ 7 之餘)</span><span><b>生曜</b>" + yao + "</span></div>" +
+    "<p>Mahabote 以生曜與緬曆年餘數,把七曜佈入賓伽(Binga)、阿通(Ahtaung)、亞扎(Yaza)、阿提帕蒂(Adhipati)、馬拉納(Marana)、泰克(Thike)、普提(Puti)七宮論命。此處提供正確起盤參數,七宮詳排交由 AI 完成。</p>"));
+  pr.push("緬甸八曜與 Mahabote(生於 " + B.str + "):");
+  pr.push("  生曜:" + yao + "(獸:" + animal + ",守護星:" + planet + ",佛塔方位:" + dir + ")——" + trait);
+  pr.push("  緬曆年 " + me.ME + " ME(潑水節換歲簡式),年餘數 " + me.r);
+  pr.push("  今日值" + DC.BUR8[todayIdx][0] + "日", "");
+  pr.push("請以緬甸占星(Mahabote 摩訶菩提)解讀:1. 以生曜與緬曆年餘數 " + me.r + " 排出七宮命盤(Binga/Ahtaung/Yaza/Adhipati/Marana/Thike/Puti),說明生曜落宮之義。2. " + yao + "日生人的性情、天命與適合的行業。3. 與哪些曜日的人相生相剋(緬甸傳統合婚忌諱)。4. 給出以佛塔" + dir + "角為中心的開運建議。5. 換歲以潑水節為簡式,若逢四月中請註明歲首存疑。");
+}
+
+/* ── 爪哇威頓 ── */
+function runWeton(out, pr) {
+  const B = readBirth();
+  const w = DC.weton(B.y, B.m, B.d);
+  const [pasName, pasDir, pasColor, pasTrait] = DC.PASARAN[w.pas];
+  const now = new Date();
+  const nw = DC.nextWeton(B.y, B.m, B.d, now.getFullYear(), now.getMonth() + 1, now.getDate());
+  const [pcName, pcNote] = DC.PANCASUDA[w.panca];
+  out.push(card("你的威頓", "Weton " + w.name,
+    '<p class="lead" style="font-size:20px">' + DC.DAY_ID[w.wd] + " × " + pasName + '</p>' +
+    '<div class="kv"><span><b>靈數 Neptu</b>' + DC.NEPTU_DAY[w.wd] + " + " + DC.NEPTU_PAS[w.pas] + " = <b style='font-size:17px'>" + w.neptu + "</b></span><span><b>市集日方位</b>" + pasDir + "</span><span><b>本命色</b>" + pasColor + "</span></div>" +
+    "<p>市集日性情:" + pasTrait + "。</p>" +
+    "<p>五神數(Pancasuda 簡法):<b style='color:var(--gold-bright)'>" + pcName + "</b>——" + pcNote + "。</p>" +
+    "<p>你的威頓每 35 天輪迴一次——爪哇人在自己的威頓日齋戒、靜思或辦 selamatan 感恩宴。你下一個本命威頓日是 <b style='color:var(--gold-bright)'>" + (nw ? nw.getUTCFullYear() + "-" + DC.pad2(nw.getUTCMonth() + 1) + "-" + DC.pad2(nw.getUTCDate()) : "—") + "</b>,宜靜不宜躁,許願最靈。</p>"));
+  pr.push("爪哇威頓 Weton/Primbon(生於 " + B.str + "):");
+  pr.push("  威頓:" + w.name + "(" + DC.DAY_ID[w.wd] + " × " + pasName + "),neptu = " + DC.NEPTU_DAY[w.wd] + "+" + DC.NEPTU_PAS[w.pas] + " = " + w.neptu);
+  pr.push("  市集日方位" + pasDir + "、色" + pasColor + ";性情:" + pasTrait);
+  pr.push("  五神數(簡法):" + pcName + "——" + pcNote);
+  pr.push("  下一個本命威頓日:" + (nw ? nw.getUTCFullYear() + "-" + DC.pad2(nw.getUTCMonth() + 1) + "-" + DC.pad2(nw.getUTCDate()) : "—"), "");
+  pr.push("請以爪哇 Primbon 傳統解讀:1. 此威頓的性格母題與人生節奏(neptu " + w.neptu + " 屬高/中/低,各有講法)。2. 適合的職業與財路(以 neptu 與市集日論)。3. 威頓日的齋戒與許願怎麼做最合傳統。4. 哪些日子(星期×市集日組合)是我的吉日與忌日。5. 若貴派 Pancasuda 取法不同請註明並以通行法為準。");
+}
+
+/* ── 泰國七曜佛日 ── */
+function runThai(out, pr) {
+  const B = readBirth();
+  const idx = DC.thai7Index(B.y, B.m, B.d, B.h);
+  const [buddha, color, badColor, trait] = DC.THAI7[idx];
+  const dayName = idx === 7 ? "週三夜(羅睺)" : ["週日", "週一", "週二", "週三(日)", "週四", "週五", "週六"][idx];
+  const zy = DC.thaiZodiacYear(B.y, B.m, B.d);
+  const animal = DC.THAI12[((zy - 4) % 12 + 12) % 12];
+  const todayIdx = DC.thai7Index(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate(), 12);
+  out.push(card("本命佛日", "เกิดวัน" + "・" + dayName + "生",
+    '<p class="lead" style="font-size:20px">' + buddha + '</p>' +
+    "<p>" + trait + "。</p>" +
+    '<div class="kv"><span><b>本命色</b>' + color + "</span><span><b>忌色</b>" + badColor + "(民俗簡表)</span><span><b>泰式生肖</b>" + animal + "年(宋干節換歲)</span></div>" +
+    "<p>泰國人拜佛先找自己的生日佛:大殿旁一排七(八)尊,你的那尊是<b style='color:var(--gold-bright)'>" + buddha + "</b>。重要日子穿本命色助運,大場合避開忌色。</p>" +
+    "<p>今日值" + (todayIdx === 7 ? "週三夜佛" : DC.THAI7[todayIdx][0]) + "——" + (todayIdx === idx ? "正是你的佛日,宜佈施、宜開張、宜求願" : "非你本命日,平常心") + "。</p>"));
+  pr.push("泰國七曜佛日(生於 " + B.str + "," + dayName + "):");
+  pr.push("  本命佛:" + buddha + ";本命色 " + color + ",忌色 " + badColor + "(民俗簡表);泰式生肖 " + animal + "年(宋干節 4/13 換歲簡式)");
+  pr.push("  性情:" + trait, "");
+  pr.push("請以泰國生日佛傳統解讀:1. " + dayName + "生人的性情、緣分與適合的行業(泰國民間怎麼說)。2. 本命佛「" + buddha + "」的典故與它給此生的功課。3. 顏色開運的具體用法(哪天穿什麼)。4. 佈施供養的合宜方式(供哪種、供幾支)。5. 若我有提問,以佛日性情直答之。");
+}
+
+/* ── 越南翹傳開卷 ── */
+function runKieu(out, pr) {
+  const q = $("q-input").value.trim();
+  if (!q) throw fail("開卷前,先寫下你的問題");
+  const i = DC.rand(DC.KIEU.length);
+  const [viet, hant, title, gloss, pol] = DC.KIEU[i];
+  const polTxt = pol === "good" ? "吉" : pol === "bad" ? "慎" : "平";
+  out.push(card("焚香拜請", "Bói Kiều",
+    '<p style="color:var(--muted);font-style:italic">「Lạy vua Từ Hải, lạy vãi Giác Duyên, lạy tiên Thúy Kiều…」<br>拜徐海王、拜覺緣師太、拜翠翹仙——默唸問題,書頁自開。</p>'));
+  out.push(card("第 " + (i + 1) + " 句・" + title, '<span class="badge' + (pol === "bad" ? " red" : pol === "good" ? "" : " dim") + '">' + polTxt + "</span>",
+    '<p class="lead" style="font-style:italic;line-height:2">' + viet.replace(/\n/g, "<br>") + "</p>" +
+    '<p style="color:var(--ivory)">' + hant + "</p>" +
+    "<p>" + gloss + "</p>"));
+  pr.push("越南翹傳開卷(Bói Kiều,《金雲翹傳》選句卅五之第 " + (i + 1) + " 句,crypto 真隨機開卷):");
+  pr.push("  詩句:" + viet.replace(/\n/g, " / "));
+  pr.push("  中譯:" + hant);
+  pr.push("  題:" + title + "(" + polTxt + ");籤面初解:" + gloss, "");
+  pr.push("請以越南 Bói Kiều 傳統解讀:1. 這句在《翹傳》原文中的情節脈絡(誰、在何處、何種處境)——以情節喻我之處境。2. 逐字逐意細解詩句意象如何對應我的問題。3. 給出明確傾向(吉/平/慎)與行動建議。4. 若懂喃字傳統可補充該句的音韻與雙關之美。");
+}
+
+/* ── 主流程 ── */
+$("btn-go").onclick = () => {
+  $("go-hint").textContent = "";
+  try { localStorage.setItem(PK, JSON.stringify({ bd: $("b-date").value, bt: $("b-time").value })); } catch (e) {}
+  const q = $("q-input").value.trim();
+  const out = [], pr = [];
+  const head = ["你是一位熟悉東南亞民俗命理的老師。以下是完整的起算資料,請以繁體中文、溫暖而誠實的口吻解讀。", ""];
+  if (q) head.push("我的問題:" + q, "");
+  try {
+    ({ maha: runMaha, weton: runWeton, thai: runThai, kieu: runKieu })[sysId](out, pr);
+  } catch (e) { if (!$("go-hint").textContent) $("go-hint").textContent = "起算失敗:" + e.message; return; }
+  $("out").innerHTML = out.join("");
+  $("prompt-box").value = head.concat(pr).join("\n");
+  $("prompt-sec").hidden = false;
+};
+$("btn-copy").onclick = async () => {
+  try { await navigator.clipboard.writeText($("prompt-box").value); }
+  catch (e) { $("prompt-box").select(); document.execCommand("copy"); }
+  $("copy-ok").hidden = false; setTimeout(() => $("copy-ok").hidden = true, 2500);
+};
+
+/* 開發測試:?test=sysId */
+(function () {
+  const t = new URLSearchParams(location.search).get("test");
+  if (!t || !SYS.some(s => s.id === t)) return;
+  sysId = t; renderSys(); updateForm();
+  $("b-date").value = "1990-05-15"; $("b-time").value = "10:00";
+  $("q-input").value = "測試提問:這件事會順利嗎?";
+  setTimeout(() => { try { $("btn-go").onclick(); document.title = $("prompt-sec").hidden ? "NY-TEST-FAIL(hidden):" + $("go-hint").textContent : "NY-TEST-OK"; } catch (e) { document.title = "NY-TEST-FAIL " + e.message; } }, 60);
+})();
+</script>

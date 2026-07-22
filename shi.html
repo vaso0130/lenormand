@@ -18,6 +18,7 @@
     <a href="numbers.html">數字館</a>
     <a href="bazi.html">八字館</a>
     <a href="shi.html" class="here">式占館</a>
+    <a href="nanyang.html">南洋館</a>
     <a href="mix.html">MIX 三術合參</a>
   </nav>
 
@@ -81,10 +82,10 @@ const SYS = [
     hint: "以「此刻」起局:九宮八門九星八神,問事的天時地利全在盤上。" },
   { id: "liuren", name: "大六壬", sub: "三式・課傳", now: true,
     hint: "月將加時,四課三傳——古人問事第一式,以此刻起課直斷。" },
-  { id: "taiyi", name: "太乙神數", sub: "三式之首・歲計", now: false,
-    hint: "太乙積年推演本年太乙所在之宮——大局氣運,三年一徙的天道節拍。" },
   { id: "taiyiming", name: "太乙命法", sub: "人道命法・以年入式", now: false, birthReq: true,
-    hint: "太乙的論命旁枝:以本生年起本命太乙局,再與今歲太乙相參——天地大數之中,你站在哪一宮。" }
+    hint: "太乙的論命之法:以本生年起本命太乙局,再與今歲太乙相參——天地大數之中,你站在哪一宮。問個人,用這個。" },
+  { id: "taiyi", name: "太乙歲計", sub: "三式之首・觀天下", now: false,
+    hint: "太乙積年推演本年太乙所在之宮——這是觀天下大勢、年景氣運之術,古為帝王兵家所用,不論個人休咎。" }
 ];
 let sysId = "qimen";
 
@@ -236,7 +237,8 @@ function runTaiyi(out, pr) {
     '<p class="lead">太乙今在' + ty.gongName + ",居宮第 " + ty.yearIn + " 年(三年一徙)</p>" +
     '<div class="grid9">' + [4, 9, 2, 3, 5, 7, 8, 1, 6].map(g =>
       '<div class="cell' + (g === ty.gong ? " hl" : "") + '"><span class="g-name">' + DC.GONG_NAME[g] + '</span><span class="g-main">' + (g === ty.gong ? "太乙" : "&nbsp;") + "</span></div>").join("") + "</div>" +
-    "<p>太乙為天帝之神,所在之宮主當年氣運焦點;所理之分野、所會之星門定主客勝負。此為歲計簡式起例,主客算與天目文昌之詳排,交由 AI 依《太乙統宗》推演。</p>"));
+    "<p>太乙為天帝之神,所在之宮主當年氣運焦點;所理之分野、所會之星門定主客勝負。此為歲計簡式起例,主客算與天目文昌之詳排,交由 AI 依《太乙統宗》推演。</p>" +
+    "<p style='color:var(--muted)'>※ 歲計論的是<b>天下大勢與年景</b>(古為帝王兵家之學),不論個人吉凶——想問自己,請改用「太乙命法」。</p>"));
   pr.push("太乙神數・歲計(簡式起例):");
   pr.push("  本年 " + ty.gz + " 年,太乙積年 " + ty.jiNian + "(太乙統宗法)");
   pr.push("  七十二局:第 " + ty.ju + " 局;太乙所在:" + ty.gongName + "(居宮第 " + ty.yearIn + " 年,三年一徙,行宮次序一二三四六七八九)", "");

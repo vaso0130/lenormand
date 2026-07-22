@@ -35,6 +35,7 @@
     <a href="numbers.html">數字館</a>
     <a href="bazi.html">八字館</a>
     <a href="shi.html">式占館</a>
+    <a href="nanyang.html">南洋館</a>
     <a href="mix.html" class="here">MIX 三術合參</a>
   </nav>
 
@@ -110,12 +111,15 @@ const POOL = [
     ["b-nine", "九星氣學", "birth"], ["b-dang", "唐四柱(당사주)", "birth"]
   ]},
   { g: "式占(三式)", items: [
-    ["n-taiyi", "太乙歲計", ""], ["b-qimen", "奇門遁甲", ""], ["b-liuren", "大六壬", ""]
+    ["n-taiyiming", "太乙命法", "birth"], ["b-qimen", "奇門遁甲", ""], ["b-liuren", "大六壬", ""]
+  ]},
+  { g: "南洋", items: [
+    ["y-maha", "緬甸八曜", "birth"], ["y-weton", "爪哇威頓", "birth"], ["y-thai", "泰國七曜佛日", "birth"], ["c-kieu", "翹傳開卷(越南)", ""]
   ]},
   { g: "牌卡快抽(三張)", items: [
     ["c-len", "雷諾曼", ""], ["c-sib", "西碧拉", ""], ["c-bel", "貝林神諭", ""], ["c-kip", "奇卜", ""],
     ["c-gra", "大雷諾曼", ""], ["c-run", "盧恩符文", ""], ["c-zw", "紫微星曜", ""], ["c-dt", "東方塔羅", ""],
-    ["c-yi", "易經(擲卦)", ""], ["c-qs", "靈籤(快取)", ""]
+    ["c-esp", "西班牙牌", ""], ["c-yi", "易經(擲卦)", ""], ["c-qs", "靈籤(快取)", ""]
   ]}
 ];
 const PRESETS = [
@@ -272,6 +276,16 @@ GEN["n-taiyi"] = () => {
     html: "<p>" + ty.gz + "年,太乙在" + ty.gongName + "(第" + ty.yearIn + "年)</p>",
     lines: ["太乙神數歲計(簡式):" + ty.gz + "年,積年 " + ty.jiNian + ",七十二局第" + ty.ju + "局,太乙在" + ty.gongName + "居第" + ty.yearIn + "年"] };
 };
+GEN["n-taiyiming"] = () => {
+  const B = birth();
+  const bb = DC.bazi(B.y, B.m, B.d, B.h, B.mi, B.tz);
+  const tyB = DC.taiyi(bb.year), tyN = DC.taiyi(new Date().getFullYear());
+  const same = tyB.gong === tyN.gong;
+  return { title: "太乙命法",
+    html: "<p>本命太乙在" + tyB.gongName + "・今歲在" + tyN.gongName + (same ? "(回臨!)" : "") + "</p>",
+    lines: ["太乙命法(人道命法簡式):命主年柱 " + bb.pillars[0].gz + ",生年積年 " + tyB.jiNian + ",七十二局第" + tyB.ju + "局,本命太乙在" + tyB.gongName + "(居宮第" + tyB.yearIn + "年)",
+      "  今歲(" + tyN.gz + "年)太乙在" + tyN.gongName + (same ? "——回臨本命宮,大數交會之年" : ",與本命宮相參")] };
+};
 GEN["n-heluo"] = () => {
   const B = birth();
   const bz = DC.bazi(B.y, B.m, B.d, B.h, B.mi, B.tz);
@@ -390,8 +404,42 @@ function drawCards(deckId, deckName) {
     lines: [deckName + " 三張快抽(crypto 真隨機):" + drawn.map((c, i) => POS[i] + "「" + c.name + (c.rev ? "(逆位)" : "") + "」").join("、")] };
 }
 for (const [id, dk, nm] of [["c-len", "len", "雷諾曼"], ["c-sib", "sib", "西碧拉"], ["c-bel", "bel", "貝林神諭"], ["c-kip", "kip", "奇卜"],
-  ["c-gra", "gra", "大雷諾曼"], ["c-run", "run", "盧恩符文"], ["c-zw", "zw", "紫微星曜"], ["c-dt", "dt", "東方塔羅"]])
+  ["c-gra", "gra", "大雷諾曼"], ["c-run", "run", "盧恩符文"], ["c-zw", "zw", "紫微星曜"], ["c-dt", "dt", "東方塔羅"], ["c-esp", "esp", "西班牙牌"]])
   GEN[id] = () => drawCards(dk, nm);
+GEN["y-maha"] = () => {
+  const B = birth();
+  const idx = DC.bur8Index(B.y, B.m, B.d, B.h);
+  const [yao, animal, dir, planet, trait] = DC.BUR8[idx];
+  const me = DC.mahaboteME(B.y, B.m, B.d);
+  return { title: "緬甸八曜",
+    html: "<p>" + yao + "日生・" + animal + "・佛塔" + dir + "角</p>",
+    lines: ["緬甸八曜(Mahabote):生於" + yao + "日(獸:" + animal + ",守護星" + planet + ",佛塔方位" + dir + ")——" + trait,
+      "  緬曆年 " + me.ME + " ME(潑水節換歲簡式),年餘數 " + me.r + "(供排 Mahabote 七宮盤)"] };
+};
+GEN["y-weton"] = () => {
+  const B = birth();
+  const w = DC.weton(B.y, B.m, B.d);
+  return { title: "爪哇威頓",
+    html: "<p>" + w.name + "・neptu " + w.neptu + "</p>",
+    lines: ["爪哇威頓 Weton:" + w.name + "(" + DC.DAY_ID[w.wd] + " × " + DC.PASARAN[w.pas][0] + "),neptu " + w.neptu,
+      "  市集日性情:" + DC.PASARAN[w.pas][3] + ";五神數(簡法):" + DC.PANCASUDA[w.panca][0] + "——" + DC.PANCASUDA[w.panca][1]] };
+};
+GEN["y-thai"] = () => {
+  const B = birth();
+  const idx = DC.thai7Index(B.y, B.m, B.d, B.h);
+  const [buddha, color, badColor, trait] = DC.THAI7[idx];
+  return { title: "泰國七曜佛日",
+    html: "<p>" + buddha + "・本命色" + color + "</p>",
+    lines: ["泰國七曜佛日:本命佛「" + buddha + "」,本命色" + color + ",忌色" + badColor + "(民俗簡表)——" + trait] };
+};
+GEN["c-kieu"] = () => {
+  const i = DC.rand(DC.KIEU.length);
+  const [viet, hant, title, gloss, pol] = DC.KIEU[i];
+  return { title: "翹傳開卷・" + title,
+    html: "<p style='font-style:italic'>" + viet.replace(/\n/g, "<br>") + "</p><p style='color:var(--muted)'>" + hant + "</p>",
+    lines: ["越南翹傳開卷(Bói Kiều,選句第" + (i + 1) + ",crypto 開卷):" + viet.replace(/\n/g, " / "),
+      "  中譯:" + hant + ";題:" + title + "(" + (pol === "good" ? "吉" : pol === "bad" ? "慎" : "平") + ");初解:" + gloss] };
+};
 GEN["c-yi"] = () => {
   const lines = [], mov = [];
   for (let i = 0; i < 6; i++) {
