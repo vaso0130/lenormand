@@ -17,6 +17,7 @@
     <a href="astro.html" class="here">占星館</a>
     <a href="numbers.html">數字館</a>
     <a href="bazi.html">八字館</a>
+    <a href="shi.html">式占館</a>
     <a href="mix.html">MIX 三術合參</a>
   </nav>
 
@@ -59,7 +60,7 @@
       </div>
     </div>
     <div id="form-now" hidden>
-      <p class="fieldset-label">起卦時刻與地點(預設為此刻此地)</p>
+      <p class="fieldset-label">起卦時刻與地點<label class="follow-now"><input type="checkbox" id="n-follow" checked><span class="live-dot"></span>跟隨此刻</label></p>
       <div class="form-grid">
         <div class="field"><label>日期</label><input id="n-date" type="date"></div>
         <div class="field"><label>時間</label><input id="n-time" type="time"></div>
@@ -228,9 +229,13 @@ function updateForm() {
   $("p-title").textContent = s.name + "・" + m[1];
   $("p-hint").textContent = m[2];
   $("out").innerHTML = ""; $("prompt-sec").hidden = true;
-  if (need[2]) setNowFields();
+  if (need[2] && $("n-follow").checked) setNowFields();
 }
 renderSys(); renderModes(); updateForm();
+// 活時鐘:勾著「跟隨此刻」就每秒對時;手動改時間即自動解除跟隨
+setInterval(() => { if ($("n-follow").checked && !$("form-now").hidden) setNowFields(); }, 1000);
+["n-date", "n-time"].forEach(id => $(id).addEventListener("input", () => { $("n-follow").checked = false; }));
+$("n-follow").addEventListener("change", () => { if ($("n-follow").checked) setNowFields(); });
 
 /* ── 起盤工具 ── */
 function readWhen(dId, tId, tzId) {

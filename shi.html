@@ -1,0 +1,264 @@
+<title>燭光式閣 · 式占館</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="hall.css">
+
+<div class="wrap">
+  <header>
+    <div class="plate">
+      <p class="eyebrow">Le Pavillon des Trois Rites</p>
+      <h1>燭光式閣</h1>
+      <p class="subtitle">太乙測天、奇門測地、六壬測人——三式者,以問時起盤,不問生辰問此刻。</p>
+    </div>
+  </header>
+
+  <nav class="halls-nav">
+    <a href="index.html">牌桌館</a>
+    <a href="astro.html">占星館</a>
+    <a href="numbers.html">數字館</a>
+    <a href="bazi.html">八字館</a>
+    <a href="shi.html" class="here">式占館</a>
+    <a href="mix.html">MIX 三術合參</a>
+  </nav>
+
+  <p class="section-label">選擇式學</p>
+  <div class="sys-row" id="sys"></div>
+
+  <section class="panel" id="panel">
+    <h2 id="p-title"></h2>
+    <span class="hint" id="p-hint"></span>
+    <div id="form-now">
+      <p class="fieldset-label">起局時刻<label class="follow-now"><input type="checkbox" id="n-follow" checked><span class="live-dot"></span>跟隨此刻</label></p>
+      <div class="form-grid">
+        <div class="field"><label>日期</label><input id="n-date" type="date"></div>
+        <div class="field"><label>時間</label><input id="n-time" type="time"></div>
+        <div class="field"><label>時區</label><input id="n-tz" type="number" step="0.5" value="8"></div>
+      </div>
+    </div>
+    <div id="form-birth">
+      <p class="fieldset-label">問測人生辰(選填——入本命/行年/年命用神)</p>
+      <div class="form-grid">
+        <div class="field"><label>出生日期</label><input id="b-date" type="date"></div>
+        <div class="field"><label>出生時間</label><input id="b-time" type="time" value="12:00"></div>
+        <div class="field"><label>性別(行年用)</label>
+          <select id="b-gender"><option value="m">男</option><option value="f">女</option></select></div>
+        <div class="field"><label>出生時區</label><input id="b-tz" type="number" step="0.5" value="8"></div>
+      </div>
+    </div>
+    <div class="form-grid" style="margin-top:14px">
+      <div class="field full"><label>你的問題</label>
+        <input id="q-input" type="text" maxlength="200" placeholder="默想並寫下你想問的事——式占以問立局,建議必填"></div>
+    </div>
+    <div class="btn-row">
+      <button class="gold-btn" id="btn-go">起 局</button>
+      <span class="hint" id="go-hint"></span>
+    </div>
+  </section>
+
+  <section id="out"></section>
+
+  <section class="prompt-sec" id="prompt-sec" hidden>
+    <p class="section-label">AI 解讀提示詞</p>
+    <textarea class="prompt-box" id="prompt-box" readonly></textarea>
+    <div class="btn-row">
+      <button class="gold-btn" id="btn-copy">複製提示詞</button>
+      <span class="copy-ok" id="copy-ok" hidden>已複製,貼給任何 AI 即可。</span>
+    </div>
+  </section>
+
+  <p class="footnote">
+    三式皆以問時起盤:奇門為時家轉盤・拆補定元;六壬三傳依九宗門(涉害取簡法);太乙為歲計簡式。<br>
+    生辰為選填——填了即入年命落宮(奇門)與本命、行年二用神(六壬,虛歲以立春換歲)。
+  </p>
+</div>
+
+<script src="divine-core.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+
+const SYS = [
+  { id: "qimen", name: "奇門遁甲", sub: "時家轉盤", now: true,
+    hint: "以「此刻」起局:九宮八門九星八神,問事的天時地利全在盤上。" },
+  { id: "liuren", name: "大六壬", sub: "三式・課傳", now: true,
+    hint: "月將加時,四課三傳——古人問事第一式,以此刻起課直斷。" },
+  { id: "taiyi", name: "太乙神數", sub: "三式之首・歲計", now: false,
+    hint: "太乙積年推演本年太乙所在之宮——大局氣運,三年一徙的天道節拍。" }
+];
+let sysId = "qimen";
+
+function renderSys() {
+  $("sys").innerHTML = "";
+  SYS.forEach(s => {
+    const b = document.createElement("button");
+    b.className = "sys-btn" + (s.id === sysId ? " active" : "");
+    b.innerHTML = '<span class="d-name">' + s.name + '</span><span class="d-sub">' + s.sub + '</span>';
+    b.onclick = () => { sysId = s.id; updateForm(); renderSys(); };
+    $("sys").appendChild(b);
+  });
+}
+function setNowFields() {
+  const n = new Date();
+  $("n-date").value = n.getFullYear() + "-" + DC.pad2(n.getMonth() + 1) + "-" + DC.pad2(n.getDate());
+  $("n-time").value = DC.pad2(n.getHours()) + ":" + DC.pad2(n.getMinutes());
+}
+function updateForm() {
+  const s = SYS.find(x => x.id === sysId);
+  $("form-now").hidden = !s.now;
+  $("form-birth").hidden = s.id === "taiyi";
+  $("p-title").textContent = s.name;
+  $("p-hint").textContent = s.hint;
+  $("out").innerHTML = ""; $("prompt-sec").hidden = true;
+  if (s.now && $("n-follow").checked) setNowFields();
+}
+renderSys(); updateForm();
+// 活時鐘:勾著「跟隨此刻」就每秒對時;手動改時間即自動解除跟隨
+setInterval(() => { if ($("n-follow").checked && !$("form-now").hidden) setNowFields(); }, 1000);
+["n-date", "n-time"].forEach(id => $(id).addEventListener("input", () => { $("n-follow").checked = false; }));
+$("n-follow").addEventListener("change", () => { if ($("n-follow").checked) setNowFields(); });
+
+const PK = "dc-shi-profile";
+try { const p = JSON.parse(localStorage.getItem(PK) || "{}"); if (p.bd) { $("b-date").value = p.bd; $("b-time").value = p.bt || "12:00"; $("b-gender").value = p.g || "m"; } } catch (e) {}
+
+function card(t, en, body) { return '<div class="result-card"><h3>' + t + (en ? '<span class="en">' + en + "</span>" : "") + "</h3>" + body + "</div>"; }
+function fail(msg) { $("go-hint").textContent = msg; return new Error(msg); }
+function readNow() {
+  const dv = $("n-date").value, tv = $("n-time").value;
+  if (!dv || !tv) throw fail("請填起局時刻");
+  const [y, m, d] = dv.split("-").map(Number), [h, mi] = tv.split(":").map(Number);
+  return { y, m, d, h, mi, tz: parseFloat($("n-tz").value) || 8, str: dv + " " + tv };
+}
+function readBirthOpt(nowBz) { // 選填生辰 → 本命/行年/年命(虛歲以立春換歲)
+  if (!$("b-date").value) return null;
+  const dv = $("b-date").value, tv = $("b-time").value || "12:00";
+  const [y, m, d] = dv.split("-").map(Number), [h, mi] = tv.split(":").map(Number);
+  const male = $("b-gender").value === "m";
+  const bb = DC.bazi(y, m, d, h, mi, parseFloat($("b-tz").value) || 8);
+  const xusui = nowBz.year - bb.year + 1;
+  if (xusui < 1) return null;
+  return { male, bb, xusui, xn: DC.xingnian(male, xusui), mingB: bb.pillars[0].b, mingGz: bb.pillars[0].gz };
+}
+
+/* ── 奇門遁甲 ── */
+function runQimen(out, pr) {
+  const N = readNow();
+  const q = $("q-input").value.trim();
+  const qm = DC.qimen(N.y, N.m, N.d, N.h, N.mi, N.tz);
+  const cellHtml = p => {
+    const t = qm.tianpan[p], d = qm.doors[p], g = qm.gods[p];
+    if (p === 5) return '<div class="cell"><span class="g-name">中五宮</span><span class="g-sub">地盤 ' + qm.dipan[5] + '</span><br><span class="g-mut">寄坤二宮</span></div>';
+    return '<div class="cell' + (p === qm.tp ? " hl" : "") + '"><span class="g-name">' + DC.GONG_NAME[p] + '</span>' +
+      '<span class="g-mut">' + (g || "") + '</span><br>' +
+      '<span class="g-main">' + (t ? t.star + " " + t.stem : "") + "</span><br>" +
+      '<span class="g-sub">' + (d || "") + " / 地盤" + qm.dipan[p] + "</span>" +
+      (p === qm.tp ? '<br><span class="g-mut" style="color:var(--gold-bright)">時干落宮</span>' : "") +
+      (p === qm.dayGongTian ? '<br><span class="g-mut">日干(天盤)</span>' : "") + "</div>";
+  };
+  out.push(card("奇門遁甲・時盤", qm.juName + "・" + qm.term + "・" + N.str,
+    '<div class="kv"><span><b>四柱</b>' + qm.bz.pillars.map(p => p.gz).join(" ") + "</span><span><b>旬首</b>" + qm.xunName + "</span><span><b>直符</b>" + qm.fuStar + "</span><span><b>直使</b>" + qm.fuDoor + "</span></div>" +
+    '<div class="grid9">' + [4, 9, 2, 3, 5, 7, 8, 1, 6].map(cellHtml).join("") + "</div>" +
+    "<p>吉門(開休生)所在:" + [1, 2, 3, 4, 6, 7, 8, 9].filter(p => ["開門", "休門", "生門"].includes(qm.doors[p])).map(p => qm.doors[p] + "在" + DC.GONG_NAME[p]).join("、") + "。</p>"));
+  const ob = readBirthOpt(qm.bz);
+  if (ob) {
+    const np = DC.BR_PALACE[ob.mingB], t = qm.tianpan[np];
+    out.push(card("問測人年命", ob.mingGz + "年生・虛歲 " + ob.xusui,
+      "<p>年命" + DC.BRANCHES[ob.mingB] + "寄" + DC.GONG_NAME[np] + "——該宮:" + (qm.gods[np] || "") + "・" + (t ? t.star + "・天盤" + t.stem : "") + "・" + (qm.doors[np] || "") + "・地盤" + qm.dipan[np] + "。年命宮之吉凶,直接應在問測人本身。</p>"));
+  }
+  pr.push("奇門遁甲時家轉盤(" + N.str + ",UTC+" + N.tz + "):");
+  pr.push("  " + qm.juName + ",節氣 " + qm.term + ",四柱 " + qm.bz.pillars.map(p => p.gz).join(" ") + ",旬首 " + qm.xunName);
+  pr.push("  直符 " + qm.fuStar + "(落時干宮),直使 " + qm.fuDoor);
+  for (const p of [1, 8, 3, 4, 9, 2, 7, 6]) {
+    const t = qm.tianpan[p];
+    pr.push("  " + DC.GONG_NAME[p] + ":" + (qm.gods[p] || "") + "・" + (t ? t.star + "・天盤" + t.stem : "") + "・" + (qm.doors[p] || "") + "・地盤" + qm.dipan[p] + (p === qm.tp ? "(時干落宮)" : "") + (p === qm.dayGongTian ? "(日干所在)" : ""));
+  }
+  pr.push("  中五宮地盤 " + qm.dipan[5] + "(寄坤二)");
+  if (ob) {
+    const np2 = DC.BR_PALACE[ob.mingB], t2 = qm.tianpan[np2];
+    pr.push("  問測人年命:" + ob.mingGz + "年生(虛歲" + ob.xusui + "),年命" + DC.BRANCHES[ob.mingB] + "寄" + DC.GONG_NAME[np2] + "——" + (qm.gods[np2] || "") + "・" + (t2 ? t2.star + "・天盤" + t2.stem : "") + "・" + (qm.doors[np2] || "") + "・地盤" + qm.dipan[np2]);
+  }
+  pr.push("");
+  pr.push("請以奇門遁甲解讀" + (q ? "我的問題" : "此刻運勢") + ":1. 取用神(日干為我、時干為事" + (ob ? "、年命宮應問測人本身" : "") + (q ? ",並依問題類別取相應用神" : "") + ")。2. 用神落宮的星門神組合、旺相休囚。3. 有無吉格凶格(青龍返首、白虎猖狂之類請自行判斷)。4. 成敗傾向與應期。5. 趨吉方位與行動建議(吉門方位)。");
+}
+
+/* ── 大六壬 ── */
+function runLiuren(out, pr) {
+  const N = readNow();
+  const q = $("q-input").value.trim();
+  const bz = DC.bazi(N.y, N.m, N.d, N.h, N.mi, N.tz);
+  const jdN = DC.jd(N.y, N.m, N.d, N.h, N.mi, N.tz);
+  const lr = DC.liuren(bz.dIdx, bz.hB, DC.sunLon(jdN));
+  out.push(card("大六壬・課式", bz.pillars[2].gz + "日 " + DC.BRANCHES[bz.hB] + "時・月將" + lr.jiangZh + "・" + (lr.isDay ? "晝貴" : "夜貴"),
+    '<div class="kv"><span><b>課體</b>' + lr.keti + "</span><span><b>貴人</b>" + lr.gui + "(" + (lr.shun ? "順" : "逆") + "佈)</span></div>" +
+    '<div class="tbl-scroll"><table class="data"><tr><th></th><th>四課</th><th>三課</th><th>二課</th><th>一課</th></tr>' +
+    "<tr><td>天將</td>" + [3, 2, 1, 0].map(i => "<td>" + lr.lessons[i].jiang + "</td>").join("") + "</tr>" +
+    '<tr><td>上神</td>' + [3, 2, 1, 0].map(i => '<td class="hl">' + lr.lessons[i].up + "</td>").join("") + "</tr>" +
+    "<tr><td>下</td>" + [3, 2, 1, 0].map(i => "<td>" + lr.lessons[i].low + "</td>").join("") + "</tr></table></div>" +
+    '<div class="tbl-scroll"><table class="data"><tr><th>三傳</th><th>支神</th><th>遁干</th><th>天將</th><th>六親</th></tr>' +
+    ["初傳", "中傳", "末傳"].map((t, i) => "<tr><td>" + t + '</td><td class="hl">' + lr.chuan[i].zh + "</td><td>" + lr.chuan[i].dun + "</td><td>" + lr.chuan[i].jiang + "</td><td>" + lr.chuan[i].qin + "</td></tr>").join("") + "</table></div>" +
+    '<p>天盤(子起順時針):' + lr.tianpan.join("・") + "</p>"));
+  const ob = readBirthOpt(bz);
+  if (ob) {
+    const mUp = lr.up(ob.mingB), xUp = lr.up(ob.xn.b);
+    out.push(card("本命與行年", ob.mingGz + "年生・虛歲 " + ob.xusui,
+      "<p>本命" + DC.BRANCHES[ob.mingB] + ",上神" + DC.BRANCHES[mUp] + "(" + lr.jiangOf(mUp) + ")——本命上神看此人一生底氣與此問中的自身狀態。</p>" +
+      "<p>行年" + ob.xn.gz + "(" + (ob.male ? "男起丙寅順行" : "女起壬申逆行") + "),上神" + DC.BRANCHES[xUp] + "(" + lr.jiangOf(xUp) + ")——行年上神看今年的際遇方向。</p>"));
+  }
+  pr.push("大六壬課式(" + N.str + ",UTC+" + N.tz + "):");
+  pr.push("  " + bz.pillars[2].gz + "日" + DC.BRANCHES[bz.hB] + "時,月將" + lr.jiangZh + "(太陽過宮),晝夜:" + (lr.isDay ? "晝" : "夜") + "貴" + lr.gui + (lr.shun ? "順" : "逆") + "佈");
+  pr.push("  天盤(地盤子丑寅卯辰巳午未申酉戌亥之上):" + lr.tianpan.join("、"));
+  pr.push("  四課(下→上/天將):" + lr.lessons.map((l, i) => "第" + "一二三四"[i] + "課 " + l.low + "→" + l.up + "/" + l.jiang).join(";"));
+  pr.push("  三傳:" + lr.chuan.map((c, i) => ["初", "中", "末"][i] + "傳 " + c.zh + "(遁干" + c.dun + ",天將" + c.jiang + ",六親" + c.qin + ")").join(";"));
+  pr.push("  課體:" + lr.keti + (lr.fuyin ? "(伏吟)" : "") + (lr.fanyin ? "(返吟)" : ""));
+  if (ob) {
+    const mUp2 = lr.up(ob.mingB), xUp2 = lr.up(ob.xn.b);
+    pr.push("  問測人:本命" + DC.BRANCHES[ob.mingB] + "(" + ob.mingGz + "年生,虛歲" + ob.xusui + "),本命上神" + DC.BRANCHES[mUp2] + "乘" + lr.jiangOf(mUp2) + ";行年" + ob.xn.gz + ",行年上神" + DC.BRANCHES[xUp2] + "乘" + lr.jiangOf(xUp2));
+  }
+  pr.push("");
+  pr.push("請以大六壬解讀" + (q ? "我的問題" : "此刻氣運") + ":1. 課體「" + lr.keti + "」的基調。2. 四課看人我雙方,三傳看事情發展(初傳因、中傳過程、末傳果)。3. 天將與六親配合細斷。" + (ob ? "4. 本命、行年上神與課傳的生剋呼應——此問對「這個人、這一年」的特別意義。5" : "4") + ". 明確的成敗傾向與應期(以三傳支神推)。" + (ob ? "6" : "5") + ". 若涉害別責等取法與貴派有異,請以傳統定法覆核並註明。");
+}
+
+/* ── 太乙神數 ── */
+function runTaiyi(out, pr) {
+  const ty = DC.taiyi(new Date().getFullYear());
+  out.push(card("歲計太乙(簡式)", "太乙統宗・積年",
+    '<div class="kv"><span><b>本年</b>' + ty.gz + "年</span><span><b>太乙積年</b>" + ty.jiNian.toLocaleString() + "</span><span><b>七十二局</b>第 " + ty.ju + " 局</span></div>" +
+    '<p class="lead">太乙今在' + ty.gongName + ",居宮第 " + ty.yearIn + " 年(三年一徙)</p>" +
+    '<div class="grid9">' + [4, 9, 2, 3, 5, 7, 8, 1, 6].map(g =>
+      '<div class="cell' + (g === ty.gong ? " hl" : "") + '"><span class="g-name">' + DC.GONG_NAME[g] + '</span><span class="g-main">' + (g === ty.gong ? "太乙" : "&nbsp;") + "</span></div>").join("") + "</div>" +
+    "<p>太乙為天帝之神,所在之宮主當年氣運焦點;所理之分野、所會之星門定主客勝負。此為歲計簡式起例,主客算與天目文昌之詳排,交由 AI 依《太乙統宗》推演。</p>"));
+  pr.push("太乙神數・歲計(簡式起例):");
+  pr.push("  本年 " + ty.gz + " 年,太乙積年 " + ty.jiNian + "(太乙統宗法)");
+  pr.push("  七十二局:第 " + ty.ju + " 局;太乙所在:" + ty.gongName + "(居宮第 " + ty.yearIn + " 年,三年一徙,行宮次序一二三四六七八九)", "");
+  pr.push("請依太乙神數體系推演:1. 以積年與局數推本年太乙格局(可自行完成天目、文昌、計神、主客算之推排)。2. 太乙在" + ty.gongName + "對天下大勢與此方位的意涵。3. 結合我的問題論主客勝負與趨避。4. 言明何處為簡式推估、何處為典籍定法。");
+}
+
+/* ── 主流程 ── */
+$("btn-go").onclick = () => {
+  $("go-hint").textContent = "";
+  try { localStorage.setItem(PK, JSON.stringify({ bd: $("b-date").value, bt: $("b-time").value, g: $("b-gender").value })); } catch (e) {}
+  const q = $("q-input").value.trim();
+  const out = [], pr = [];
+  const head = ["你是一位深研三式(太乙、奇門、六壬)的老師。以下是完整的起局資料,請以繁體中文、溫暖而誠實的口吻解讀。", ""];
+  if (q) head.push("我的問題:" + q, "");
+  try {
+    ({ qimen: runQimen, liuren: runLiuren, taiyi: runTaiyi })[sysId](out, pr);
+  } catch (e) { if (!$("go-hint").textContent) $("go-hint").textContent = "起局失敗:" + e.message; return; }
+  $("out").innerHTML = out.join("");
+  $("prompt-box").value = head.concat(pr).join("\n");
+  $("prompt-sec").hidden = false;
+};
+$("btn-copy").onclick = async () => {
+  try { await navigator.clipboard.writeText($("prompt-box").value); }
+  catch (e) { $("prompt-box").select(); document.execCommand("copy"); }
+  $("copy-ok").hidden = false; setTimeout(() => $("copy-ok").hidden = true, 2500);
+};
+
+/* 開發測試:?test=sysId */
+(function () {
+  const t = new URLSearchParams(location.search).get("test");
+  if (!t || !SYS.some(s => s.id === t)) return;
+  sysId = t; renderSys(); updateForm();
+  $("b-date").value = "1990-05-15"; $("b-time").value = "10:00";
+  $("q-input").value = "測試提問:這件事會順利嗎?";
+  setTimeout(() => { try { $("btn-go").onclick(); document.title = $("prompt-sec").hidden ? "SHI-TEST-FAIL(hidden):" + $("go-hint").textContent : "SHI-TEST-OK"; } catch (e) { document.title = "SHI-TEST-FAIL " + e.message; } }, 60);
+})();
+</script>

@@ -34,6 +34,7 @@
     <a href="astro.html">占星館</a>
     <a href="numbers.html">數字館</a>
     <a href="bazi.html">八字館</a>
+    <a href="shi.html">式占館</a>
     <a href="mix.html" class="here">MIX 三術合參</a>
   </nav>
 
@@ -102,11 +103,14 @@ const POOL = [
     ["a-prashna", "印度問事", "loc"], ["a-xiu", "宿曜(本命+今日)", "birth"]
   ]},
   { g: "數術", items: [
-    ["n-life", "生命靈數", "birth"], ["n-meihua", "梅花易數(時間卦)", ""], ["n-taiyi", "太乙歲計", ""], ["n-heluo", "河洛理數", "birth"]
+    ["n-life", "生命靈數", "birth"], ["n-meihua", "梅花易數(時間卦)", ""], ["n-heluo", "河洛理數", "birth"]
   ]},
   { g: "命術", items: [
     ["b-bazi", "八字四柱", "birth"], ["b-ziwei", "紫微斗數", "birth"], ["b-shichu", "四柱推命(和流)", "birth"],
-    ["b-nine", "九星氣學", "birth"], ["b-qimen", "奇門遁甲", ""], ["b-liuren", "大六壬", ""]
+    ["b-nine", "九星氣學", "birth"]
+  ]},
+  { g: "式占(三式)", items: [
+    ["n-taiyi", "太乙歲計", ""], ["b-qimen", "奇門遁甲", ""], ["b-liuren", "大六壬", ""]
   ]},
   { g: "牌卡快抽(三張)", items: [
     ["c-len", "雷諾曼", ""], ["c-sib", "西碧拉", ""], ["c-bel", "貝林神諭", ""], ["c-kip", "奇卜", ""],
@@ -321,6 +325,16 @@ GEN["b-nine"] = () => {
     html: "<p>本命星 " + DC.NSTAR[star] + "・月命星 " + DC.NSTAR[mStar] + "</p>",
     lines: ["九星氣學:本命星 " + DC.NSTAR[star] + "(" + (B.male ? "男" : "女") + "命),月命星 " + DC.NSTAR[mStar]] };
 };
+function birthOpt(nowBz) { // 生辰欄有填就入本命/行年(虛歲以立春換歲)
+  if (!$("b-date").value) return null;
+  try {
+    const B = birth();
+    const bb = DC.bazi(B.y, B.m, B.d, B.h, B.mi, B.tz);
+    const xusui = nowBz.year - bb.year + 1;
+    if (xusui < 1) return null;
+    return { male: B.male, bb, xusui, xn: DC.xingnian(B.male, xusui), mingB: bb.pillars[0].b, mingGz: bb.pillars[0].gz };
+  } catch (e) { return null; }
+}
 GEN["b-qimen"] = () => {
   const n = new Date();
   const qm = DC.qimen(n.getFullYear(), n.getMonth() + 1, n.getDate(), n.getHours(), n.getMinutes(), 8);
@@ -329,17 +343,28 @@ GEN["b-qimen"] = () => {
     const t = qm.tianpan[p];
     lines.push("  " + DC.GONG_NAME[p] + ":" + (qm.gods[p] || "") + " " + (t ? t.star + " 天盤" + t.stem : "") + " " + (qm.doors[p] || "") + " 地盤" + qm.dipan[p] + (p === qm.tp ? "(時干)" : "") + (p === qm.dayGongTian ? "(日干)" : ""));
   }
+  const ob = birthOpt(qm.bz);
+  if (ob) {
+    const np = DC.BR_PALACE[ob.mingB], t = qm.tianpan[np];
+    lines.push("  問測人年命:" + ob.mingGz + "年生(虛歲" + ob.xusui + "),年命" + DC.BRANCHES[ob.mingB] + "寄" + DC.GONG_NAME[np] + "——" + (qm.gods[np] || "") + " " + (t ? t.star + " 天盤" + t.stem : "") + " " + (qm.doors[np] || ""));
+  }
   return { title: "奇門遁甲", html: "<p>" + qm.juName + "・直符" + qm.fuStar + "・直使" + qm.fuDoor + "</p>", lines };
 };
 GEN["b-liuren"] = () => {
   const n = new Date();
   const bz = DC.bazi(n.getFullYear(), n.getMonth() + 1, n.getDate(), n.getHours(), n.getMinutes(), 8);
   const lr = DC.liuren(bz.dIdx, bz.hB, DC.sunLon(DC.jd(n.getFullYear(), n.getMonth() + 1, n.getDate(), n.getHours(), n.getMinutes(), 8)));
+  const lines = ["大六壬(" + bz.pillars[2].gz + "日" + DC.BRANCHES[bz.hB] + "時,月將" + lr.jiangZh + "):課體 " + lr.keti,
+    "  四課:" + lr.lessons.map((l, i) => l.low + "→" + l.up + "/" + l.jiang).join(";"),
+    "  三傳:" + lr.chuan.map((c, i) => ["初", "中", "末"][i] + c.zh + "(" + c.dun + "," + c.jiang + "," + c.qin + ")").join("、")];
+  const ob = birthOpt(bz);
+  if (ob) {
+    const mUp = lr.up(ob.mingB), xUp = lr.up(ob.xn.b);
+    lines.push("  問測人:本命" + DC.BRANCHES[ob.mingB] + "(" + ob.mingGz + "年生,虛歲" + ob.xusui + "),本命上神" + DC.BRANCHES[mUp] + "乘" + lr.jiangOf(mUp) + ";行年" + ob.xn.gz + ",行年上神" + DC.BRANCHES[xUp] + "乘" + lr.jiangOf(xUp));
+  }
   return { title: "大六壬",
     html: "<p>" + bz.pillars[2].gz + "日" + DC.BRANCHES[bz.hB] + "時・" + lr.keti + "・三傳 " + lr.chuan.map(c => c.zh).join("→") + "</p>",
-    lines: ["大六壬(" + bz.pillars[2].gz + "日" + DC.BRANCHES[bz.hB] + "時,月將" + lr.jiangZh + "):課體 " + lr.keti,
-      "  四課:" + lr.lessons.map((l, i) => l.low + "→" + l.up + "/" + l.jiang).join(";"),
-      "  三傳:" + lr.chuan.map((c, i) => ["初", "中", "末"][i] + c.zh + "(" + c.dun + "," + c.jiang + "," + c.qin + ")").join("、")] };
+    lines };
 };
 /* 牌卡快抽 */
 function drawCards(deckId, deckName) {

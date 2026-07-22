@@ -838,7 +838,7 @@ var DC = {};
     };
     const mk = b => ({ b, zh: DC.BRANCHES[b], jiang: jiangOf(b), dun: dunGan(b), qin: liuqin(b) });
     return {
-      jiang, jiangZh: DC.BRANCHES[jiang], o, up, keti, fuyin, fanyin,
+      jiang, jiangZh: DC.BRANCHES[jiang], o, up, jiangOf, keti, fuyin, fanyin,
       lessons: lessons.map((l, i) => ({
         low: i === 0 ? DC.STEMS[dS] : DC.BRANCHES[l.low],
         up: DC.BRANCHES[l.upB], jiang: jiangOf(l.upB)
@@ -847,6 +847,13 @@ var DC = {};
       gui: DC.BRANCHES[gui], isDay, shun,
       tianpan: Array.from({ length: 12 }, (_, i) => DC.BRANCHES[up(i)])
     };
+  };
+
+  /* ── 本命與行年(六壬/奇門入盤用)── */
+  DC.BR_PALACE = [1, 8, 8, 3, 4, 4, 9, 2, 2, 7, 6, 6]; // 地支寄宮(子坎丑寅艮…)
+  DC.xingnian = function (male, xusui) { // 行年:男一歲丙寅順行,女一歲壬申逆行
+    const idx = male ? (2 + xusui - 1) % 60 : ((8 - (xusui - 1)) % 60 + 60) % 60;
+    return { idx, gz: DC.GZ(idx), b: idx % 12 };
   };
 
   /* ═══ 太乙神數(歲計簡式)═══ */
