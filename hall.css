@@ -348,6 +348,22 @@ table.data td.red { color: #E8A08F; }
 }
 .copy-ok { color: #9FC49F; font-size: 13px; margin-left: 10px; }
 
+/* ── 占卜歷史 ── */
+#hist-sec { max-width: 760px; margin: 44px auto 0; }
+.hist-item {
+  display: flex; align-items: center; gap: 12px;
+  border-bottom: 1px solid var(--felt-line);
+  padding: 10px 6px; font-size: 13.5px;
+}
+.hist-item:first-child { border-top: 1px solid var(--felt-line); }
+.h-info { flex: 1; min-width: 0; }
+.h-when { color: var(--muted); font-size: 12px; margin-right: 10px; white-space: nowrap; }
+.h-what { color: var(--ivory-shade); }
+.h-q { display: block; color: var(--muted); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.h-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+.h-actions .ghost-btn { padding: 6px 12px; font-size: 12.5px; }
+.hist-empty { text-align: center; color: var(--muted); font-size: 13px; }
+
 .footnote {
   margin-top: 40px; text-align: center;
   color: var(--muted); font-size: 12px; line-height: 1.9;

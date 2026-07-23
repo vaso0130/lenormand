@@ -34,11 +34,16 @@
         <div class="field"><label>出生日期</label><input id="b-date" type="date"></div>
         <div class="field" id="f-time"><label>出生時間</label><input id="b-time" type="time" value="12:00">
           <div class="note">緬曆週三分晝(水曜)夜(羅睺);泰曆週三 18:00 後屬夜佛</div></div>
+        <div class="field" id="f-target"><label>指定日期(吉凶擇日,選填)</label><input id="t-date" type="date">
+          <div class="note">想算下個月某日的吉凶,填那一天;留空即以今日論值曜/宿運</div></div>
       </div>
     </div>
     <div class="form-grid" style="margin-top:14px">
       <div class="field full"><label>你的問題</label>
         <input id="q-input" type="text" maxlength="200" placeholder="默想並寫下你想問的事(翹傳開卷建議必填)"></div>
+      <div class="field"><label>AI 解讀語氣</label>
+        <select id="tone-select"></select>
+        <input id="tone-custom" type="text" maxlength="40" placeholder="寫下你想要的語氣" hidden style="margin-top:6px"></div>
     </div>
     <div class="btn-row">
       <button class="gold-btn" id="btn-go">起 算</button>
@@ -55,6 +60,12 @@
       <button class="gold-btn" id="btn-copy">複製提示詞</button>
       <span class="copy-ok" id="copy-ok" hidden>已複製,貼給任何 AI 即可。</span>
     </div>
+  </section>
+
+  <section id="hist-sec">
+    <p class="section-label">占卜歷史</p>
+    <div id="hist-list"></div>
+    <div class="btn-row" style="justify-content:center"><button class="ghost-btn" id="hist-clear">清空歷史</button></div>
   </section>
 
   <p class="footnote">
@@ -98,6 +109,8 @@ function updateForm() {
   $("out").innerHTML = ""; $("prompt-sec").hidden = true;
 }
 renderSys(); updateForm();
+DC.toneInit(() => { if (!$("prompt-sec").hidden) $("prompt-box").value = $("prompt-box").value.replace(/語氣:「[^」]*」/, "語氣:「" + DC.toneValue() + "」"); });
+DC.histBind();
 
 const PK = "dc-ny-profile";
 try { const p = JSON.parse(localStorage.getItem(PK) || "{}"); if (p.bd) { $("b-date").value = p.bd; $("b-time").value = p.bt || "12:00"; } } catch (e) {}
@@ -110,6 +123,12 @@ function readBirth() {
   const [y, m, d] = dv.split("-").map(Number), [h, mi] = tv.split(":").map(Number);
   return { y, m, d, h, mi, str: dv + " " + tv };
 }
+function readTarget() { // 指定日期(擇日);未填=今日
+  const tv = $("t-date").value;
+  if (tv) { const [y, m, d] = tv.split("-").map(Number); return { y, m, d, str: tv, picked: true }; }
+  const n = new Date();
+  return { y: n.getFullYear(), m: n.getMonth() + 1, d: n.getDate(), str: "今日", picked: false };
+}
 
 /* ── 緬甸八曜 + Mahabote ── */
 function runMaha(out, pr) {
@@ -117,20 +136,21 @@ function runMaha(out, pr) {
   const idx = DC.bur8Index(B.y, B.m, B.d, B.h);
   const [yao, animal, dir, planet, trait] = DC.BUR8[idx];
   const me = DC.mahaboteME(B.y, B.m, B.d);
-  const todayIdx = DC.bur8Index(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate(), 12);
+  const T = readTarget();
+  const todayIdx = DC.bur8Index(T.y, T.m, T.d, 12);
   out.push(card("八曜生辰", "生於" + yao + "日",
     '<p class="lead" style="font-size:20px">' + yao + "・" + animal + '<span style="font-size:13px;color:var(--muted)">(守護星:' + planet + ")</span></p>" +
     "<p>" + trait + "。</p>" +
     "<p>你的佛塔方位角在<b style='color:var(--gold-bright)'>" + dir + "</b>——緬甸人到佛塔,會去自己生曜的角落澆水獻花,一歲澆一杯,再加一杯敬未來。行運低迷時,朝" + dir + "方禮敬最能補氣。</p>" +
-    "<p>今日值" + DC.BUR8[todayIdx][0] + "(" + DC.BUR8[todayIdx][1] + ")——" + (todayIdx === idx ? "正是你的本命曜日,宜行大事、宜還願" : "與你的" + yao + "相參看今日行事") + "。</p>"));
+    "<p>" + T.str + "值" + DC.BUR8[todayIdx][0] + "(" + DC.BUR8[todayIdx][1] + ")——" + (todayIdx === idx ? "正是你的本命曜日,宜行大事、宜還願" : "與你的" + yao + "相參看該日行事") + "。</p>"));
   out.push(card("摩訶菩提命盤(起盤參數)", "Mahabote",
     '<div class="kv"><span><b>緬曆年</b>' + me.ME + " ME</span><span><b>年餘數</b>" + me.r + "(緬曆年 ÷ 7 之餘)</span><span><b>生曜</b>" + yao + "</span></div>" +
     "<p>Mahabote 以生曜與緬曆年餘數,把七曜佈入賓伽(Binga)、阿通(Ahtaung)、亞扎(Yaza)、阿提帕蒂(Adhipati)、馬拉納(Marana)、泰克(Thike)、普提(Puti)七宮論命。此處提供正確起盤參數,七宮詳排交由 AI 完成。</p>"));
   pr.push("緬甸八曜與 Mahabote(生於 " + B.str + "):");
   pr.push("  生曜:" + yao + "(獸:" + animal + ",守護星:" + planet + ",佛塔方位:" + dir + ")——" + trait);
   pr.push("  緬曆年 " + me.ME + " ME(潑水節換歲簡式),年餘數 " + me.r);
-  pr.push("  今日值" + DC.BUR8[todayIdx][0] + "日", "");
-  pr.push("請以緬甸占星(Mahabote 摩訶菩提)解讀:1. 以生曜與緬曆年餘數 " + me.r + " 排出七宮命盤(Binga/Ahtaung/Yaza/Adhipati/Marana/Thike/Puti),說明生曜落宮之義。2. " + yao + "日生人的性情、天命與適合的行業。3. 與哪些曜日的人相生相剋(緬甸傳統合婚忌諱)。4. 給出以佛塔" + dir + "角為中心的開運建議。5. 換歲以潑水節為簡式,若逢四月中請註明歲首存疑。");
+  pr.push("  " + T.str + "(" + T.y + "-" + T.m + "-" + T.d + ")值" + DC.BUR8[todayIdx][0] + "日" + (todayIdx === idx ? "(本命曜日)" : ""), "");
+  pr.push("請以緬甸占星(Mahabote 摩訶菩提)解讀:1. 以生曜與緬曆年餘數 " + me.r + " 排出七宮命盤(Binga/Ahtaung/Yaza/Adhipati/Marana/Thike/Puti),說明生曜落宮之義。2. " + yao + "日生人的性情、天命與適合的行業。3. 與哪些曜日的人相生相剋(緬甸傳統合婚忌諱)。4. " + (T.picked ? "指定日 " + T.str + " 值" + DC.BUR8[todayIdx][0] + "——以生曜對該日曜論該日吉凶宜忌。5. " : "") + "給出以佛塔" + dir + "角為中心的開運建議。" + (T.picked ? "6" : "5") + ". 換歲以潑水節為簡式,若逢四月中請註明歲首存疑。");
 }
 
 /* ── 爪哇威頓 ── */
@@ -138,21 +158,25 @@ function runWeton(out, pr) {
   const B = readBirth();
   const w = DC.weton(B.y, B.m, B.d);
   const [pasName, pasDir, pasColor, pasTrait] = DC.PASARAN[w.pas];
-  const now = new Date();
-  const nw = DC.nextWeton(B.y, B.m, B.d, now.getFullYear(), now.getMonth() + 1, now.getDate());
+  const T = readTarget();
+  const tw = DC.weton(T.y, T.m, T.d);
+  const nw = DC.nextWeton(B.y, B.m, B.d, T.y, T.m, T.d);
   const [pcName, pcNote] = DC.PANCASUDA[w.panca];
   out.push(card("你的威頓", "Weton " + w.name,
     '<p class="lead" style="font-size:20px">' + DC.DAY_ID[w.wd] + " × " + pasName + '</p>' +
     '<div class="kv"><span><b>靈數 Neptu</b>' + DC.NEPTU_DAY[w.wd] + " + " + DC.NEPTU_PAS[w.pas] + " = <b style='font-size:17px'>" + w.neptu + "</b></span><span><b>市集日方位</b>" + pasDir + "</span><span><b>本命色</b>" + pasColor + "</span></div>" +
     "<p>市集日性情:" + pasTrait + "。</p>" +
     "<p>五神數(Pancasuda 簡法):<b style='color:var(--gold-bright)'>" + pcName + "</b>——" + pcNote + "。</p>" +
-    "<p>你的威頓每 35 天輪迴一次——爪哇人在自己的威頓日齋戒、靜思或辦 selamatan 感恩宴。你下一個本命威頓日是 <b style='color:var(--gold-bright)'>" + (nw ? nw.getUTCFullYear() + "-" + DC.pad2(nw.getUTCMonth() + 1) + "-" + DC.pad2(nw.getUTCDate()) : "—") + "</b>,宜靜不宜躁,許願最靈。</p>"));
+    "<p>你的威頓每 35 天輪迴一次——爪哇人在自己的威頓日齋戒、靜思或辦 selamatan 感恩宴。自" + T.str + "起,最近的本命威頓日是 <b style='color:var(--gold-bright)'>" + (nw ? nw.getUTCFullYear() + "-" + DC.pad2(nw.getUTCMonth() + 1) + "-" + DC.pad2(nw.getUTCDate()) : "—") + "</b>,宜靜不宜躁,許願最靈。</p>" +
+    (T.picked ? "<p>指定日 " + T.str + " 為 <b>" + tw.name + "</b>(neptu " + tw.neptu + ")" + (tw.wd === w.wd && tw.pas === w.pas ? "——正是你的本命威頓日!大事吉,靜心尤佳" : "——與你的 " + w.name + " 合參論該日行事") + "。</p>" : "")));
   pr.push("爪哇威頓 Weton/Primbon(生於 " + B.str + "):");
   pr.push("  威頓:" + w.name + "(" + DC.DAY_ID[w.wd] + " × " + pasName + "),neptu = " + DC.NEPTU_DAY[w.wd] + "+" + DC.NEPTU_PAS[w.pas] + " = " + w.neptu);
   pr.push("  市集日方位" + pasDir + "、色" + pasColor + ";性情:" + pasTrait);
   pr.push("  五神數(簡法):" + pcName + "——" + pcNote);
-  pr.push("  下一個本命威頓日:" + (nw ? nw.getUTCFullYear() + "-" + DC.pad2(nw.getUTCMonth() + 1) + "-" + DC.pad2(nw.getUTCDate()) : "—"), "");
-  pr.push("請以爪哇 Primbon 傳統解讀:1. 此威頓的性格母題與人生節奏(neptu " + w.neptu + " 屬高/中/低,各有講法)。2. 適合的職業與財路(以 neptu 與市集日論)。3. 威頓日的齋戒與許願怎麼做最合傳統。4. 哪些日子(星期×市集日組合)是我的吉日與忌日。5. 若貴派 Pancasuda 取法不同請註明並以通行法為準。");
+  pr.push("  自" + T.str + "起最近的本命威頓日:" + (nw ? nw.getUTCFullYear() + "-" + DC.pad2(nw.getUTCMonth() + 1) + "-" + DC.pad2(nw.getUTCDate()) : "—"));
+  if (T.picked) pr.push("  指定日 " + T.str + " 為 " + tw.name + "(neptu " + tw.neptu + ")" + (tw.wd === w.wd && tw.pas === w.pas ? "——本命威頓日" : ""));
+  pr.push("");
+  pr.push("請以爪哇 Primbon 傳統解讀:1. 此威頓的性格母題與人生節奏(neptu " + w.neptu + " 屬高/中/低,各有講法)。2. 適合的職業與財路(以 neptu 與市集日論)。3. 威頓日的齋戒與許願怎麼做最合傳統。4. " + (T.picked ? "指定日 " + T.str + "(" + tw.name + ",neptu " + tw.neptu + ")與我的威頓相合與否——該日行事吉凶。5. " : "") + "哪些日子(星期×市集日組合)是我的吉日與忌日。" + (T.picked ? "6" : "5") + ". 若貴派 Pancasuda 取法不同請註明並以通行法為準。");
 }
 
 /* ── 泰國七曜佛日 ── */
@@ -163,17 +187,19 @@ function runThai(out, pr) {
   const dayName = idx === 7 ? "週三夜(羅睺)" : ["週日", "週一", "週二", "週三(日)", "週四", "週五", "週六"][idx];
   const zy = DC.thaiZodiacYear(B.y, B.m, B.d);
   const animal = DC.THAI12[((zy - 4) % 12 + 12) % 12];
-  const todayIdx = DC.thai7Index(new Date().getFullYear(), new Date().getMonth() + 1, new Date().getDate(), 12);
+  const T = readTarget();
+  const todayIdx = DC.thai7Index(T.y, T.m, T.d, 12);
   out.push(card("本命佛日", "เกิดวัน" + "・" + dayName + "生",
     '<p class="lead" style="font-size:20px">' + buddha + '</p>' +
     "<p>" + trait + "。</p>" +
     '<div class="kv"><span><b>本命色</b>' + color + "</span><span><b>忌色</b>" + badColor + "(民俗簡表)</span><span><b>泰式生肖</b>" + animal + "年(宋干節換歲)</span></div>" +
     "<p>泰國人拜佛先找自己的生日佛:大殿旁一排七(八)尊,你的那尊是<b style='color:var(--gold-bright)'>" + buddha + "</b>。重要日子穿本命色助運,大場合避開忌色。</p>" +
-    "<p>今日值" + (todayIdx === 7 ? "週三夜佛" : DC.THAI7[todayIdx][0]) + "——" + (todayIdx === idx ? "正是你的佛日,宜佈施、宜開張、宜求願" : "非你本命日,平常心") + "。</p>"));
+    "<p>" + T.str + "值" + (todayIdx === 7 ? "週三夜佛" : DC.THAI7[todayIdx][0]) + "——" + (todayIdx === idx ? "正是你的佛日,宜佈施、宜開張、宜求願" : "非你本命佛日,平常心行事") + "。</p>"));
   pr.push("泰國七曜佛日(生於 " + B.str + "," + dayName + "):");
   pr.push("  本命佛:" + buddha + ";本命色 " + color + ",忌色 " + badColor + "(民俗簡表);泰式生肖 " + animal + "年(宋干節 4/13 換歲簡式)");
-  pr.push("  性情:" + trait, "");
-  pr.push("請以泰國生日佛傳統解讀:1. " + dayName + "生人的性情、緣分與適合的行業(泰國民間怎麼說)。2. 本命佛「" + buddha + "」的典故與它給此生的功課。3. 顏色開運的具體用法(哪天穿什麼)。4. 佈施供養的合宜方式(供哪種、供幾支)。5. 若我有提問,以佛日性情直答之。");
+  pr.push("  性情:" + trait);
+  pr.push("  " + T.str + "(" + T.y + "-" + T.m + "-" + T.d + ")值" + (todayIdx === 7 ? "週三夜佛" : DC.THAI7[todayIdx][0]) + (todayIdx === idx ? "(本命佛日)" : ""), "");
+  pr.push("請以泰國生日佛傳統解讀:1. " + dayName + "生人的性情、緣分與適合的行業(泰國民間怎麼說)。2. 本命佛「" + buddha + "」的典故與它給此生的功課。3. 顏色開運的具體用法(哪天穿什麼)。4. " + (T.picked ? "指定日 " + T.str + " 值該佛日——以本命佛日對該日論吉凶宜忌。5. " : "") + "佈施供養的合宜方式(供哪種、供幾支)。" + (T.picked ? "6" : "5") + ". 若我有提問,以佛日性情直答之。");
 }
 
 /* ── 越南翹傳開卷 ── */
@@ -202,7 +228,7 @@ $("btn-go").onclick = () => {
   try { localStorage.setItem(PK, JSON.stringify({ bd: $("b-date").value, bt: $("b-time").value })); } catch (e) {}
   const q = $("q-input").value.trim();
   const out = [], pr = [];
-  const head = ["你是一位熟悉東南亞民俗命理的老師。以下是完整的起算資料,請以繁體中文、溫暖而誠實的口吻解讀。", ""];
+  const head = ["你是一位熟悉東南亞民俗命理的老師。以下是完整的起算資料。" + DC.toneHead(), ""];
   if (q) head.push("我的問題:" + q, "");
   try {
     ({ maha: runMaha, weton: runWeton, thai: runThai, kieu: runKieu })[sysId](out, pr);
@@ -210,6 +236,7 @@ $("btn-go").onclick = () => {
   $("out").innerHTML = out.join("");
   $("prompt-box").value = head.concat(pr).join("\n");
   $("prompt-sec").hidden = false;
+  DC.histSave("南洋館", SYS.find(x => x.id === sysId).name, q, $("out").innerHTML, $("prompt-box").value);
 };
 $("btn-copy").onclick = async () => {
   try { await navigator.clipboard.writeText($("prompt-box").value); }
@@ -223,6 +250,7 @@ $("btn-copy").onclick = async () => {
   if (!t || !SYS.some(s => s.id === t)) return;
   sysId = t; renderSys(); updateForm();
   $("b-date").value = "1990-05-15"; $("b-time").value = "10:00";
+  $("t-date").value = "2026-08-15";
   $("q-input").value = "測試提問:這件事會順利嗎?";
   setTimeout(() => { try { $("btn-go").onclick(); document.title = $("prompt-sec").hidden ? "NY-TEST-FAIL(hidden):" + $("go-hint").textContent : "NY-TEST-OK"; } catch (e) { document.title = "NY-TEST-FAIL " + e.message; } }, 60);
 })();

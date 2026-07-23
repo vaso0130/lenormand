@@ -946,6 +946,101 @@ DC.DECKS_MINI = {
     return a;
   })() }
 };
+/* ═══ 別館共用:城市/語氣/歷史 ═══ */
+DC.CITIES = [
+  ["台北", 25.04, 121.51, 8], ["新北", 25.01, 121.46, 8], ["桃園", 24.99, 121.30, 8], ["台中", 24.15, 120.67, 8],
+  ["台南", 22.99, 120.21, 8], ["高雄", 22.63, 120.30, 8], ["香港", 22.32, 114.17, 8], ["北京", 39.90, 116.41, 8],
+  ["上海", 31.23, 121.47, 8], ["東京", 35.68, 139.69, 9], ["首爾", 37.57, 126.98, 9], ["新加坡", 1.35, 103.82, 8],
+  ["倫敦", 51.51, -0.13, 0], ["巴黎", 48.86, 2.35, 1], ["紐約", 40.71, -74.01, -5], ["洛杉磯", 34.05, -118.24, -8],
+  ["自訂", null, null, null]
+];
+DC.fillCitySelect = function (sel, latEl, lonEl, tzEl) {
+  DC.CITIES.forEach(function (c, i) { var o = document.createElement("option"); o.value = i; o.textContent = c[0]; sel.appendChild(o); });
+  sel.addEventListener("change", function () {
+    var c = DC.CITIES[+sel.value];
+    if (c[1] != null) { latEl.value = c[1]; lonEl.value = c[2]; tzEl.value = c[3]; }
+  });
+  sel.value = 0; latEl.value = DC.CITIES[0][1]; lonEl.value = DC.CITIES[0][2]; tzEl.value = DC.CITIES[0][3];
+};
+
+DC.TONES = ["溫暖但誠實", "直白犀利,不留情面", "溫柔療癒,多些鼓勵", "冷靜理性,條理分析", "詩意神秘,如占卜師低語"];
+DC.toneInit = function (onChange) { // 需要頁面有 #tone-select 與 #tone-custom
+  var sel = document.getElementById("tone-select"), cus = document.getElementById("tone-custom");
+  if (!sel) return;
+  DC.TONES.forEach(function (t) { var o = document.createElement("option"); o.value = t; o.textContent = t; sel.appendChild(o); });
+  var oc = document.createElement("option"); oc.value = "__custom__"; oc.textContent = "自訂…"; sel.appendChild(oc);
+  try {
+    var s = localStorage.getItem("dc-tone") || DC.TONES[0];
+    cus.value = localStorage.getItem("dc-tone-custom") || "";
+    sel.value = DC.TONES.indexOf(s) >= 0 ? s : "__custom__";
+  } catch (e) { sel.value = DC.TONES[0]; }
+  cus.hidden = sel.value !== "__custom__";
+  var ch = function () {
+    cus.hidden = sel.value !== "__custom__";
+    try {
+      localStorage.setItem("dc-tone", sel.value === "__custom__" ? "__custom__" : sel.value);
+      localStorage.setItem("dc-tone-custom", cus.value);
+    } catch (e) {}
+    if (onChange) onChange(DC.toneValue());
+  };
+  sel.addEventListener("change", ch); cus.addEventListener("input", ch);
+};
+DC.toneValue = function () {
+  var sel = document.getElementById("tone-select"), cus = document.getElementById("tone-custom");
+  if (!sel) return "溫暖但誠實";
+  return sel.value === "__custom__" ? (cus.value.trim() || "溫暖但誠實") : sel.value;
+};
+DC.toneHead = function () { return "請以繁體中文解讀,語氣:「" + DC.toneValue() + "」。"; };
+
+DC.histBind = function () { // 跨館共用歷史(需 #hist-list/#hist-clear/#out/#prompt-box/#prompt-sec)
+  var $id = function (x) { return document.getElementById(x); };
+  var list = $id("hist-list");
+  if (!list) { DC.histSave = function () {}; return; }
+  var KEY = "dc-hall-history";
+  var all = function () { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { return []; } };
+  var save = function (a) { try { localStorage.setItem(KEY, JSON.stringify(a)); } catch (e) {} };
+  var render = function () {
+    var arr = all();
+    if (!arr.length) { list.innerHTML = '<p class="hist-empty">尚無紀錄——起一盤吧。</p>'; return; }
+    list.innerHTML = "";
+    arr.forEach(function (r, i) {
+      var d = new Date(r.t);
+      var div = document.createElement("div");
+      div.className = "hist-item";
+      var info = document.createElement("div"); info.className = "h-info";
+      var when = document.createElement("span"); when.className = "h-when";
+      when.textContent = d.getFullYear() + "/" + (d.getMonth() + 1) + "/" + d.getDate() + " " + DC.pad2(d.getHours()) + ":" + DC.pad2(d.getMinutes());
+      var what = document.createElement("span"); what.className = "h-what";
+      what.textContent = "【" + r.page + "】" + r.title;
+      info.appendChild(when); info.appendChild(what);
+      if (r.q) { var qq = document.createElement("span"); qq.className = "h-q"; qq.textContent = r.q; info.appendChild(qq); }
+      var act = document.createElement("div"); act.className = "h-actions";
+      var bv = document.createElement("button"); bv.className = "ghost-btn"; bv.textContent = "重看";
+      bv.onclick = function () {
+        $id("out").innerHTML = r.html;
+        $id("prompt-box").value = r.prompt;
+        $id("prompt-sec").hidden = false;
+        $id("out").scrollIntoView({ behavior: "smooth" });
+      };
+      var bd = document.createElement("button"); bd.className = "ghost-btn"; bd.textContent = "刪除";
+      bd.onclick = function () { var a = all(); a.splice(i, 1); save(a); render(); };
+      act.appendChild(bv); act.appendChild(bd);
+      div.appendChild(info); div.appendChild(act);
+      list.appendChild(div);
+    });
+  };
+  var clr = $id("hist-clear");
+  if (clr) clr.onclick = function () { save([]); render(); };
+  DC.histSave = function (page, title, q, html, prompt) {
+    var a = all();
+    a.unshift({ t: Date.now(), page: page, title: title, q: q || "", html: html, prompt: prompt });
+    while (a.length > 30) a.pop();
+    save(a); render();
+  };
+  render();
+};
+DC.histSave = function () {}; // histBind 前的安全預設
+
 /* ═══ 南洋館:緬甸八曜/爪哇威頓/泰國七曜/越南翹傳 ═══ */
 DC.BUR8 = [ // 週日起;7=羅睺(週三午後)
   ["日曜", "迦樓羅(金翅鳥)", "東北", "太陽", "如金翅鳥凌空:志高自尊,獨立慷慨於志、儉嗇於財(緬諺:日曜生人惜財)"],

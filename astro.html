@@ -72,11 +72,15 @@
             <input id="n-lon" type="number" step="0.01" style="width:33%">
             <input id="n-tz" type="number" step="0.5" style="width:33%">
           </div></div>
+        <div class="field full"><div class="note">想為未來某日擇時起盤(如行運、返照、宿曜擇日):取消「跟隨此刻」,直接指定該日期時間即可。</div></div>
       </div>
     </div>
     <div class="form-grid" style="margin-top:14px">
       <div class="field full"><label>你的問題</label>
         <input id="q-input" type="text" maxlength="200" placeholder="默想並寫下你想問的事(卜卦與問事占星必填,其餘選填)"></div>
+      <div class="field"><label>AI 解讀語氣</label>
+        <select id="tone-select"></select>
+        <input id="tone-custom" type="text" maxlength="40" placeholder="寫下你想要的語氣" hidden style="margin-top:6px"></div>
     </div>
     <div class="btn-row">
       <button class="gold-btn" id="btn-go">起 盤</button>
@@ -93,6 +97,12 @@
       <button class="gold-btn" id="btn-copy">複製提示詞</button>
       <span class="copy-ok" id="copy-ok" hidden>已複製,貼給任何 AI 即可。</span>
     </div>
+  </section>
+
+  <section id="hist-sec">
+    <p class="section-label">占卜歷史</p>
+    <div id="hist-list"></div>
+    <div class="btn-row" style="justify-content:center"><button class="ghost-btn" id="hist-clear">清空歷史</button></div>
   </section>
 
   <p class="footnote">
@@ -233,6 +243,8 @@ function updateForm() {
   if (need[2] && $("n-follow").checked) setNowFields();
 }
 renderSys(); renderModes(); updateForm();
+DC.toneInit(() => { if (!$("prompt-sec").hidden) $("prompt-box").value = $("prompt-box").value.replace(/語氣:「[^」]*」/, "語氣:「" + DC.toneValue() + "」"); });
+DC.histBind();
 // 活時鐘:勾著「跟隨此刻」就每秒對時;手動改時間即自動解除跟隨
 setInterval(() => { if ($("n-follow").checked && !$("form-now").hidden) setNowFields(); }, 1000);
 ["n-date", "n-time"].forEach(id => $(id).addEventListener("input", () => { $("n-follow").checked = false; }));
@@ -344,11 +356,13 @@ function run() {
   const out = [], pr = [];
   MODES[modeId](B, P, N, q, out, pr);
   $("out").innerHTML = out.join("");
-  const head = ["你是一位資深占星師。以下是完整的起盤資料,請以繁體中文、溫暖而誠實的口吻解讀。",
+  const head = ["你是一位資深占星師。以下是完整的起盤資料。" + DC.toneHead(),
     "(本盤由「燭光星壇」以真實天文計算起出;宮位採整宮制,恆星制採 Lahiri。)", ""];
   if (q) head.push("我的問題:" + q, "");
   $("prompt-box").value = head.concat(pr).join("\n");
   $("prompt-sec").hidden = false;
+  const s = SYS.find(x => x.id === sysId), m = s.modes.find(x => x[0] === modeId);
+  DC.histSave("占星館", s.name + "・" + m[1], q, $("out").innerHTML, $("prompt-box").value);
 }
 
 const MODES = {};
